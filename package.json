@@ -1,6 +1,6 @@
 {
   "name": "fallen-london-favourites",
-  "description": "An unofficial Fallen London extension to mark branches, storylets and cards as favourite or avoided",
+  "description": "Mark branches, storylets and cards as favourite or avoided in Fallen London. Reorder and protect choices",
   "private": true,
   "version": "0.6.0",
   "repository": {

@@ -6,7 +6,7 @@ export default defineConfig({
     name: 'Fallen London Favourites',
     short_name: 'Fallen London Favourites',
     description:
-      'An unofficial Fallen London extension to mark branches, storylets and cards as favourite or avoided',
+      'Mark branches, storylets and cards as favourite or avoided in Fallen London. Reorder and protect choices',
     version: '0.6.0',
     icons: {
       '16': 'img/icon16.png',
@@ -17,6 +17,10 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: '{7bb30f84-a0c4-406c-9590-191c5b486891}',
+        // @ts-expect-error — new Firefox requirement, WXT types not updated yet
+        data_collection_permissions: {
+          required: ['none'],
+        },
       },
     },
     permissions: ['storage', 'unlimitedStorage'],

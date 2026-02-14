@@ -3,6 +3,11 @@
   "description": "An unofficial Fallen London extension to mark branches, storylets and cards as favourite or avoided",
   "private": true,
   "version": "0.6.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gasovn/fallen-london-favourites"
+  },
+  "bugs": "https://github.com/gasovn/fallen-london-favourites/issues",
   "type": "module",
   "scripts": {
     "dev": "wxt",

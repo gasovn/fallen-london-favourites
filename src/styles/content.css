@@ -1,0 +1,85 @@
+/* Needed for bypassing FL's specificity nightmares */
+/*csslint adjoining-classes:false*/
+
+#main .storylet_favourite {
+  outline: thin solid lime;
+}
+
+#main .storylet_avoid {
+  outline: thin solid red;
+}
+
+#main .fave_toggle_button {
+  float: right;
+  height: 30px;
+  width: 30px;
+}
+
+#main .pf-disabled {
+  pointer-events: none;
+  filter: grayscale(100%);
+}
+
+#main .pf-disabled.shift-pressed {
+  pointer-events: auto;
+  cursor: pointer;
+  filter: none;
+}
+
+#main .storylet_anchor {
+  display: none;
+}
+
+#main .hand__card-container {
+  position: relative;
+  text-align: center;
+}
+
+#main .card__discard-button {
+  width: 80%;
+  padding: 8px 10px;
+}
+
+#main .card_toggle_button {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+#main .hand__card-container .card_toggle_button {
+  height: 16px;
+  width: 16px;
+  vertical-align: middle;
+  margin: 9px 0 0 3px;
+}
+
+#main .small-card-container .card_toggle_button {
+  float: right;
+  height: 30px;
+  width: 30px;
+}
+
+#main .button_fave,
+#main .button_fave:hover,
+#main .card_fave .hand__card {
+  outline: 1px solid lime;
+}
+
+#main .button_avoid,
+#main .button_avoid:hover,
+#main .card_avoid .hand__card {
+  outline: 1px solid red;
+}
+
+#main .button-protected {
+  color: transparent;
+}
+
+#main .protect-confirm {
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

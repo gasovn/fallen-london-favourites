@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Favourites for Fallen London Options</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+
+  <body>
+    <p>
+      <a href="#" id="changelogLink">Show changelog</a>
+      <a href="#" id="changelogHideLink" class="changelogHideLink">Hide changelog</a>
+    </p>
+
+    <hr />
+
+    <div id="optionsContainer" class="container">
+      <div class="header">Branch/storylet reordering</div>
+
+      <form>
+        <p class="item">
+          <label>
+            <input type="radio" value="branch_no_reorder" name="branch_reorder_mode" />
+            Highlight all, no reordering
+          </label>
+        </p>
+
+        <p class="item">
+          <label>
+            <input type="radio" value="branch_reorder_active" name="branch_reorder_mode" />
+            Highlight all, float active to the top/bottom
+          </label>
+        </p>
+
+        <p class="item">
+          <input type="radio" value="branch_reorder_all" name="branch_reorder_mode" />
+          <label> Highlight and float all to the top/bottom </label>
+        </p>
+      </form>
+
+      <div class="header">Click mode</div>
+
+      <form>
+        <p class="item">
+          <label>
+            <input type="radio" value="click_through" name="switch_mode" />
+            Click through: Favourite &rarr; Avoid &rarr; Neutral
+          </label>
+        </p>
+
+        <p class="item">
+          <label>
+            <input type="radio" value="modifier_click" name="switch_mode" />
+            Click to set Favourite, Ctrl+Click to set Avoid
+          </label>
+        </p>
+      </form>
+
+      <div class="header">Block actions</div>
+
+      <form>
+        <p class="item">
+          <label>
+            <input type="radio" value="false" name="block_action" />
+            Allow clicks on buttons and cards
+          </label>
+        </p>
+
+        <p class="item">
+          <label>
+            <input type="radio" value="true" name="block_action" />
+            Block clicks on buttons and cards. Hold Shift to bypass
+          </label>
+        </p>
+      </form>
+    </div>
+
+    <div id="changelogContainer" class="container">
+      <pre id="changelogText" class="changelog"></pre>
+    </div>
+
+    <hr />
+
+    <p class="feedback">
+      <a href="https://github.com/gasovn/fallen-london-favourites/issues" target="_blank"
+        >Report a bug</a
+      >
+      &middot;
+      <a href="mailto:forest.vvolf@gmail.com">Contact</a>
+    </p>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

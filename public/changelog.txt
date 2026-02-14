@@ -1,0 +1,72 @@
+Version 0.6.0
+
+* Chrome: upgraded to Manifest V3
+* Rewritten with modern tech stack (TypeScript, WXT)
+* Click protection on avoided branches
+* All your data is preserved
+
+Version 0.5.2
+
+* storylets mark and sorting fix
+
+Version 0.5.1
+
+* Branch sorting fixed
+
+Version 0.5.0
+
+* In extension settings you now can choose to disable discard and action buttons for storylets and cards.
+Shift key on keyboard allows you to make action anyway
+
+Version 0.4.4
+
+* previous branches selector fix reversed as FB fixed it from their side
+
+Version 0.4.3
+
+* card displacement on the right side fixed
+
+Version 0.4.2
+
+* card buttons fixed
+
+Version 0.4.1
+
+* branches selector fixed
+
+Version 0.4.0
+
+* Updated to work with Fallen London's new UI (by Trevor Loflin / Alexander Kashev)
+* Fixed random reordering of storylets when discarding / drawing cards (by Alexander Kashev)
+* Hopefully stopped sync-installed copies of extension from clobbering sync storage (by Alexander Kashev)
+
+(Previous changes by Alexander Kashev)
+
+Version 0.3.1
+
+* REALLY worked around the script not always activating (e.g. after login)
+
+Version 0.3
+
+* Worked around the script not always activating (e.g. after login)
+* Added avoid (red) option for branches/storylets
+* Added a modifier-click mode for cycling through green/red states
+* Improved storage engine to support more records
+
+Version 0.2.2
+
+* Compatibility code for Protector userstyles
+
+Version 0.2.1
+
+* Added support for cards (green/red) and storylets
+* Improved reinjection on reload
+
+Version 0.1.1
+
+* Fixed links in Options page
+* Apply reorder on script/page load
+
+Version 0.1
+
+* Initial release

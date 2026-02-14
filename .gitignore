@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# WXT build output
+.output/
+.wxt/
+dist/
+*.zip
+stats.html
+stats-*.json
+
+# Logs
+*.log

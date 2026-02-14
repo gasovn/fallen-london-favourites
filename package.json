@@ -1,0 +1,48 @@
+{
+  "name": "fallen-london-favourites",
+  "description": "An unofficial Fallen London extension to mark branches, storylets and cards as favourite or avoided",
+  "private": true,
+  "version": "0.6.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "lint": "pnpm run lint:eslint && pnpm run lint:tsc && pnpm run lint:prettier",
+    "lint:eslint": "eslint src/ tests/",
+    "lint:tsc": "tsc --noEmit",
+    "lint:prettier": "prettier --check src/ tests/",
+    "fix": "pnpm run fix:eslint && pnpm run fix:prettier",
+    "fix:eslint": "eslint src/ tests/ --fix",
+    "fix:prettier": "prettier --write src/ tests/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "wxt prepare",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --max-warnings=0",
+      "prettier --check"
+    ],
+    "src/**/*.{css,html}": [
+      "prettier --check"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@stylistic/eslint-plugin": "^5.8.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0",
+    "vitest": "^4.0.18",
+    "wxt": "^0.20.17"
+  }
+}

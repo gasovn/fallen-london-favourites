@@ -18,11 +18,10 @@ An unofficial browser extension for Fallen London that lets you mark branches, s
 
 <img src="store-assets/screenshots/03-readme-cards.png" alt="Cards with favourite and avoid status, click protection" width="540">
 
-## Supported browsers
+## Install
 
-- Chrome (MV3)
-- Firefox (MV2)
-- Firefox for Android (142+)
+- [Chrome Web Store](https://chromewebstore.google.com/detail/fallen-london-favourites/jkaoljkdjoecocmlnncdljoeeijlcjao)
+- [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/fallen-london-favourites/) (desktop and Android 142+)
 
 ## Development
 

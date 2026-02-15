@@ -7,7 +7,7 @@ export default defineConfig({
     short_name: 'Fallen London Favourites',
     description:
       'Mark branches, storylets and cards as favourite or avoided in Fallen London. Reorder and protect choices',
-    version: '0.6.0',
+    version: '0.6.1',
     icons: {
       '16': 'img/icon16.png',
       '32': 'img/icon32.png',

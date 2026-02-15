@@ -22,7 +22,7 @@ An unofficial browser extension for Fallen London that lets you mark branches, s
 
 - Chrome (MV3)
 - Firefox (MV2)
-- Firefox for Android (120+)
+- Firefox for Android (142+)
 
 ## Development
 

@@ -24,7 +24,7 @@ export default defineConfig({
         },
       },
       gecko_android: {
-        strict_min_version: '120.0',
+        strict_min_version: '142.0',
       },
     },
     permissions: ['storage', 'unlimitedStorage'],

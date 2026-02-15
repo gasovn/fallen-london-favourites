@@ -1,3 +1,11 @@
+Version 0.6.2
+
+* Added support for Fifth City Stories section (persistent storylets)
+
+Version 0.6.1
+
+* Fixed data loss on extension update (favourites and settings could be lost)
+
 Version 0.6.0
 
 * Chrome: upgraded to Manifest V3

@@ -2,7 +2,7 @@
   "name": "fallen-london-favourites",
   "description": "Mark branches, storylets and cards as favourite or avoided in Fallen London. Reorder and protect choices",
   "private": true,
-  "version": "0.6.1",
+  "version": "0.6.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/gasovn/fallen-london-favourites"
@@ -44,6 +44,7 @@
     "@stylistic/eslint-plugin": "^5.8.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
+    "happy-dom": "^20.6.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",

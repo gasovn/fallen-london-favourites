@@ -11,7 +11,7 @@ import {
 
 export function fillClickHandlers(): void {
   const buttons = document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
-    '.storylet .button--go, .card__discard-button',
+    '.storylet .button--go, .persistent .button--go, .card__discard-button',
   );
 
   buttons.forEach((btn) => {
@@ -254,6 +254,7 @@ function reorderElements(
 export function parseStorylets(faveData: FaveData, reorder: boolean = false): void {
   const branches = document.querySelectorAll<HTMLElement>('#main .media--branch');
   const storylets = document.querySelectorAll<HTMLElement>('#main .storylet');
+  const persistent = document.querySelectorAll<HTMLElement>('#main .persistent');
 
   let reorderActive = false;
   let reorderLocked = false;
@@ -278,5 +279,12 @@ export function parseStorylets(faveData: FaveData, reorder: boolean = false): vo
   } else if (storylets.length) {
     processElements(storylets, faveData.storylet_faves, faveData.storylet_avoids, faveData, false);
     reorderElements(storylets, reorderActive, reorderLocked);
+  }
+
+  // Persistent storylets (Fifth City Stories) are processed separately
+  // so reordering stays within the disclosure container
+  if (persistent.length) {
+    processElements(persistent, faveData.storylet_faves, faveData.storylet_avoids, faveData, false);
+    reorderElements(persistent, reorderActive, reorderLocked);
   }
 }

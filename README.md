@@ -11,6 +11,13 @@ An unofficial browser extension for Fallen London that lets you mark branches, s
 - Optional click protection on avoided branches
 - Settings sync across browsers via Chrome Sync / Firefox Account
 
+<p>
+<img src="store-assets/screenshots/01-readme-fave.png" alt="Favourite storylets highlighted in green" width="420">
+<img src="store-assets/screenshots/02-readme-avoid.png" alt="Avoided storylets highlighted in red" width="420">
+</p>
+
+<img src="store-assets/screenshots/03-readme-cards.png" alt="Cards with favourite and avoid status, click protection" width="540">
+
 ## Supported browsers
 
 - Chrome (MV3)

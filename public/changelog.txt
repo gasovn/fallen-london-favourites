@@ -1,3 +1,8 @@
+Version 0.6.3
+
+* Added Firefox for Android support
+* Fixed card discard button not being blocked on mobile
+
 Version 0.6.2
 
 * Added support for Fifth City Stories section (persistent storylets)

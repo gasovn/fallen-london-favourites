@@ -26,7 +26,7 @@ function applyBlockAction(container: Element, state: FaveState, blockAction: boo
   const discardButton = queryLast(container, '.card__discard-button');
   const marginButton = queryLast(container, '.button--margin');
   const handCard = queryLast(container, '.hand__card');
-  const buttonletDelete = queryLast(container, '.buttonlet-delete');
+  const buttonletContainer = queryLast(container, '.buttonlet-container');
 
   const disableDiscard = state === 'fave' && blockAction;
   const disableMargin = (state === 'avoid' && blockAction) || (state === 'fave' && !blockAction);
@@ -46,14 +46,15 @@ function applyBlockAction(container: Element, state: FaveState, blockAction: boo
     handCard.classList.toggle('pf-disabled', disableHand);
   }
 
-  if (buttonletDelete) {
-    buttonletDelete.classList.toggle('pf-disabled', disableDelete);
+  if (buttonletContainer) {
+    buttonletContainer.classList.toggle('pf-disabled', disableDelete);
+    buttonletContainer.classList.toggle('button--disabled', disableDelete);
   }
 }
 
 function applyCardStyling(container: Element, state: FaveState): void {
   const discardButtons = container.querySelectorAll<HTMLElement>(
-    '.card__discard-button, .buttonlet-delete',
+    '.card__discard-button, .buttonlet-container',
   );
 
   switch (state) {

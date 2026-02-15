@@ -23,6 +23,9 @@ export default defineConfig({
           required: ['none'],
         },
       },
+      gecko_android: {
+        strict_min_version: '120.0',
+      },
     },
     permissions: ['storage', 'unlimitedStorage'],
     host_permissions: ['*://*.fallenlondon.com/*'],

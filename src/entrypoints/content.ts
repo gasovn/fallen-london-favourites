@@ -162,17 +162,17 @@ export default defineContentScript({
         return;
       }
 
-      const isAvoidedBranch = target.matches('.storylet_avoid .button--go span, .button_avoid');
+      const button = target.closest<HTMLElement>('.storylet_avoid .button--go, .button_avoid');
 
-      if (!isAvoidedBranch) {
+      if (!button) {
         return;
       }
 
       const now = Date.now();
-      const lastTimestamp = parseInt(target.dataset.protectTimestamp ?? '0', 10);
+      const lastTimestamp = parseInt(button.dataset.protectTimestamp ?? '0', 10);
 
       if (
-        !target.dataset.protectTimestamp ||
+        !button.dataset.protectTimestamp ||
         now - lastTimestamp >= faveData.options.protectInterval
       ) {
         e.stopImmediatePropagation();
@@ -182,15 +182,15 @@ export default defineContentScript({
 
         confirmText.className = 'protect-confirm';
         confirmText.textContent = 'SURE?';
-        target.appendChild(confirmText);
-        target.classList.add('button-protected');
+        button.appendChild(confirmText);
+        button.classList.add('button-protected');
 
         ctx.setTimeout(() => {
-          target.classList.remove('button-protected');
+          button.classList.remove('button-protected');
           confirmText.remove();
         }, faveData.options.protectInterval);
 
-        target.dataset.protectTimestamp = String(now);
+        button.dataset.protectTimestamp = String(now);
       }
     }
 
@@ -235,22 +235,40 @@ export default defineContentScript({
         document,
         'touchstart',
         ((e: TouchEvent) => {
-          const target = e.target as HTMLElement;
+          const touch = e.touches[0];
 
-          if (!target?.closest('.pf-disabled')) {
+          if (!touch) {
+            return;
+          }
+
+          // pointer-events: none means the touch target is behind the button,
+          // so we find .pf-disabled elements by hit-testing their bounding rects
+          let disabled: HTMLElement | null = null;
+
+          for (const el of document.querySelectorAll<HTMLElement>('#main .pf-disabled')) {
+            const rect = el.getBoundingClientRect();
+
+            if (
+              touch.clientX >= rect.left &&
+              touch.clientX <= rect.right &&
+              touch.clientY >= rect.top &&
+              touch.clientY <= rect.bottom
+            ) {
+              disabled = el;
+              break;
+            }
+          }
+
+          if (!disabled) {
             return;
           }
 
           timer = setTimeout(() => {
-            const disabled = target.closest('.pf-disabled') as HTMLElement;
-
-            if (disabled) {
-              disabled.style.pointerEvents = 'auto';
-              disabled.click();
-              setTimeout(() => {
-                disabled.style.pointerEvents = '';
-              }, faveData.options.protectInterval);
-            }
+            disabled.style.pointerEvents = 'auto';
+            disabled.click();
+            setTimeout(() => {
+              disabled.style.pointerEvents = '';
+            }, faveData.options.protectInterval);
           }, LONG_PRESS_MS);
         }) as EventListener,
         { passive: true },

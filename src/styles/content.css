@@ -83,3 +83,11 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+@media (pointer: coarse) {
+  #main .fave_toggle_button,
+  #main .card_toggle_button {
+    height: 48px;
+    width: 48px;
+  }
+}

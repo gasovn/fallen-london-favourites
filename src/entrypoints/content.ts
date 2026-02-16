@@ -2,6 +2,7 @@ import type { FaveData } from '@/types';
 import { getOptions, unpackSet } from '@/lib/storage';
 import { parseStorylets, fillClickHandlers, shiftHandler } from '@/lib/storylets';
 import { parseCards } from '@/lib/cards';
+import { isMobile, LONG_PRESS_MS } from '@/lib/platform';
 import '@/styles/content.css';
 
 export default defineContentScript({
@@ -22,7 +23,7 @@ export default defineContentScript({
         branch_reorder_mode: 'branch_reorder_active',
         switch_mode: 'click_through',
         block_action: false,
-        protectInterval: 2000,
+        protectInterval: 5000,
       },
     };
 
@@ -57,7 +58,7 @@ export default defineContentScript({
             'branch_reorder_active',
           switch_mode: (data.switch_mode as FaveData['options']['switch_mode']) ?? 'click_through',
           block_action: data.block_action === true,
-          protectInterval: 2000,
+          protectInterval: 5000,
         },
       };
     }
@@ -226,6 +227,49 @@ export default defineContentScript({
     ctx.addEventListener(window, 'keyup', shiftHandler);
 
     ctx.addEventListener(document, 'click', protectAvoids, { capture: true });
+
+    if (isMobile()) {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+
+      ctx.addEventListener(
+        document,
+        'touchstart',
+        ((e: TouchEvent) => {
+          const target = e.target as HTMLElement;
+
+          if (!target?.closest('.pf-disabled')) {
+            return;
+          }
+
+          timer = setTimeout(() => {
+            const disabled = target.closest('.pf-disabled') as HTMLElement;
+
+            if (disabled) {
+              disabled.style.pointerEvents = 'auto';
+              disabled.click();
+              setTimeout(() => {
+                disabled.style.pointerEvents = '';
+              }, faveData.options.protectInterval);
+            }
+          }, LONG_PRESS_MS);
+        }) as EventListener,
+        { passive: true },
+      );
+
+      ctx.addEventListener(document, 'touchend', () => {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      });
+
+      ctx.addEventListener(document, 'touchcancel', () => {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      });
+    }
 
     startWrapObserver();
   },

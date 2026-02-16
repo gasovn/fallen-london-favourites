@@ -1,4 +1,4 @@
-import type { FaveState, SwitchMode } from '@/types';
+import type { FaveData, FaveState, SwitchMode } from '@/types';
 import { packSet, setOptions } from '@/lib/storage';
 
 export const ICON_SUFFIX: Record<FaveState, string> = {
@@ -111,6 +111,17 @@ export function applyState(
       avoids.delete(id);
       break;
   }
+}
+
+export function toFaveSets(faveData: FaveData): FaveSets {
+  return {
+    branch_faves: faveData.branch_faves,
+    branch_avoids: faveData.branch_avoids,
+    storylet_faves: faveData.storylet_faves,
+    storylet_avoids: faveData.storylet_avoids,
+    card_faves: faveData.card_faves,
+    card_avoids: faveData.card_avoids,
+  };
 }
 
 export async function saveFaves(sets: FaveSets): Promise<void> {

@@ -1,5 +1,6 @@
 import { getOption, setOption } from '@/lib/storage';
 import { DEFAULT_OPTIONS, type DefaultStorageOptions } from '@/types';
+import { isMobile } from '@/lib/platform';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const radios = document.querySelectorAll<HTMLInputElement>('input[type=radio]');
@@ -39,6 +40,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       await setOption(key, checkbox.checked as unknown as DefaultStorageOptions[typeof key]);
     });
+  }
+
+  if (isMobile()) {
+    const mobileLabels = document.querySelectorAll<HTMLElement>('[data-mobile-text]');
+
+    for (const label of mobileLabels) {
+      const input = label.querySelector('input');
+      const mobileText = label.dataset.mobileText ?? '';
+
+      label.textContent = '';
+
+      if (input) {
+        label.appendChild(input);
+      }
+
+      label.append(` ${mobileText}`);
+    }
   }
 
   const changelogUrl = browser.runtime.getURL('/changelog.txt');

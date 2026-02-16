@@ -5,8 +5,10 @@ import {
   getNextCardState,
   applyState,
   saveFaves,
+  toFaveSets,
   ICON_SUFFIX,
 } from '@/lib/toggle';
+import { isMobile, attachLongPressHandler } from '@/lib/platform';
 
 function queryLast(parent: Element, selector: string): HTMLElement | null {
   const all = parent.querySelectorAll<HTMLElement>(selector);
@@ -93,6 +95,19 @@ function applyCardStyling(container: Element, state: FaveState): void {
   }
 }
 
+async function doCardToggle(
+  cardId: number,
+  isModifier: boolean,
+  faveData: FaveData,
+): Promise<void> {
+  const currentState = getCurrentState(cardId, faveData.card_faves, faveData.card_avoids);
+  const nextState = getNextCardState(currentState, faveData.options.switch_mode, isModifier);
+
+  applyState(cardId, nextState, faveData.card_faves, faveData.card_avoids);
+  await saveFaves(toFaveSets(faveData));
+  parseCards(faveData);
+}
+
 function createCardToggleHandler(faveData: FaveData): (e: MouseEvent) => void {
   return async (e: MouseEvent) => {
     e.preventDefault();
@@ -104,23 +119,9 @@ function createCardToggleHandler(faveData: FaveData): (e: MouseEvent) => void {
       return;
     }
 
-    const currentState = getCurrentState(cardId, faveData.card_faves, faveData.card_avoids);
-
     const isModifier = e.metaKey || e.ctrlKey;
-    const nextState = getNextCardState(currentState, faveData.options.switch_mode, isModifier);
 
-    applyState(cardId, nextState, faveData.card_faves, faveData.card_avoids);
-
-    await saveFaves({
-      branch_faves: faveData.branch_faves,
-      branch_avoids: faveData.branch_avoids,
-      storylet_faves: faveData.storylet_faves,
-      storylet_avoids: faveData.storylet_avoids,
-      card_faves: faveData.card_faves,
-      card_avoids: faveData.card_avoids,
-    });
-
-    parseCards(faveData);
+    await doCardToggle(cardId, isModifier, faveData);
   };
 }
 
@@ -161,6 +162,14 @@ export function parseCards(faveData: FaveData): void {
     toggleButton.title = 'Playing Favourites: toggle favourite';
     toggleButton.dataset.toggleId = String(cardId);
     toggleButton.addEventListener('click', toggleHandler);
+
+    if (isMobile() && faveData.options.switch_mode === 'modifier_click') {
+      attachLongPressHandler(
+        toggleButton,
+        () => doCardToggle(cardId, false, faveData),
+        () => doCardToggle(cardId, true, faveData),
+      );
+    }
 
     if (card.classList.contains('hand__card-container')) {
       card.appendChild(toggleButton);

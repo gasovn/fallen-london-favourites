@@ -1,12 +1,27 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseStorylets, fillClickHandlers } from '../storylets';
+import { isMobile } from '../platform';
 import type { FaveData } from '@/types';
+
+vi.mock('../platform', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../platform')>(); // eslint-disable-line @typescript-eslint/consistent-type-imports
+
+  return {
+    ...actual,
+    isMobile: vi.fn(() => false),
+  };
+});
 
 // Mock WXT's browser global
 vi.stubGlobal('browser', {
   runtime: {
     getURL: (path: string) => `chrome-extension://test${path}`,
+  },
+  storage: {
+    local: {
+      set: vi.fn(() => Promise.resolve()),
+    },
   },
 });
 
@@ -22,7 +37,7 @@ function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
       branch_reorder_mode: 'branch_no_reorder',
       switch_mode: 'click_through',
       block_action: false,
-      protectInterval: 2000,
+      protectInterval: 5000,
     },
     ...overrides,
   };
@@ -129,7 +144,7 @@ describe('parseStorylets', () => {
           branch_reorder_mode: 'branch_reorder_active',
           switch_mode: 'click_through',
           block_action: false,
-          protectInterval: 2000,
+          protectInterval: 5000,
         },
       }),
       true,
@@ -177,5 +192,80 @@ describe('fillClickHandlers', () => {
     fillClickHandlers();
 
     expect(btn.dataset.originalValue).toBe('Go');
+  });
+});
+
+describe('mobile long press on toggle button', () => {
+  let main: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    main = document.createElement('div');
+    main.id = 'main';
+    document.body.appendChild(main);
+    vi.mocked(isMobile).mockReturnValue(true);
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.mocked(isMobile).mockReturnValue(false);
+    vi.useRealTimers();
+  });
+
+  it('long press sets avoid in modifier_click mode', () => {
+    const el = createStoryletElement(100, 'storylet');
+
+    main.appendChild(el);
+
+    const data = makeFaveData({
+      options: { ...makeFaveData().options, switch_mode: 'modifier_click' },
+    });
+
+    parseStorylets(data);
+
+    const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
+
+    toggleBtn.dispatchEvent(new Event('touchstart'));
+    vi.advanceTimersByTime(500);
+
+    expect(data.storylet_avoids.has(100)).toBe(true);
+  });
+
+  it('short press sets fave in modifier_click mode', () => {
+    const el = createStoryletElement(100, 'storylet');
+
+    main.appendChild(el);
+
+    const data = makeFaveData({
+      options: { ...makeFaveData().options, switch_mode: 'modifier_click' },
+    });
+
+    parseStorylets(data);
+
+    const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
+
+    toggleBtn.dispatchEvent(new Event('touchstart'));
+    toggleBtn.dispatchEvent(new Event('touchend'));
+
+    expect(data.storylet_faves.has(100)).toBe(true);
+  });
+
+  it('does not attach touch handlers in click_through mode', () => {
+    const el = createStoryletElement(100, 'storylet');
+
+    main.appendChild(el);
+
+    const data = makeFaveData(); // click_through by default
+
+    parseStorylets(data);
+
+    const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
+
+    toggleBtn.dispatchEvent(new Event('touchstart'));
+    vi.advanceTimersByTime(500);
+
+    // No state change from touch — only click handler should work
+    expect(data.storylet_faves.has(100)).toBe(false);
+    expect(data.storylet_avoids.has(100)).toBe(false);
   });
 });

@@ -5,9 +5,10 @@ import {
   getNextState,
   applyState,
   saveFaves,
+  toFaveSets,
   ICON_SUFFIX,
-  type FaveSets,
 } from '@/lib/toggle';
+import { isMobile, attachLongPressHandler } from '@/lib/platform';
 
 export function fillClickHandlers(): void {
   const buttons = document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
@@ -85,6 +86,21 @@ function createToggleButton(id: number, state: FaveState, isLocked: boolean): HT
   return btn;
 }
 
+async function doToggle(
+  id: number,
+  isModifier: boolean,
+  faves: Set<number>,
+  avoids: Set<number>,
+  faveData: FaveData,
+): Promise<void> {
+  const currentState = getCurrentState(id, faves, avoids);
+  const nextState = getNextState(currentState, faveData.options.switch_mode, isModifier);
+
+  applyState(id, nextState, faves, avoids);
+  await saveFaves(toFaveSets(faveData));
+  parseStorylets(faveData, false);
+}
+
 function makeToggleHandler(
   faveData: FaveData,
   faves: Set<number>,
@@ -97,24 +113,7 @@ function makeToggleHandler(
     const id = parseInt(target.dataset.toggleId ?? '0', 10);
     const isModifier = e.metaKey || e.ctrlKey;
 
-    const currentState = getCurrentState(id, faves, avoids);
-    const nextState = getNextState(currentState, faveData.options.switch_mode, isModifier);
-
-    applyState(id, nextState, faves, avoids);
-
-    const sets: FaveSets = {
-      branch_faves: faveData.branch_faves,
-      branch_avoids: faveData.branch_avoids,
-      storylet_faves: faveData.storylet_faves,
-      storylet_avoids: faveData.storylet_avoids,
-      card_faves: faveData.card_faves,
-      card_avoids: faveData.card_avoids,
-    };
-
-    await saveFaves(sets);
-
-    // Re-parse without reorder (matches original setBranchFave/setStoryletFave behaviour)
-    parseStorylets(faveData, false);
+    await doToggle(id, isModifier, faves, avoids, faveData);
   };
 }
 
@@ -163,6 +162,15 @@ function processElements(
     const toggleButton = createToggleButton(id, state, isLocked);
 
     toggleButton.addEventListener('click', toggleHandler);
+
+    if (isMobile() && faveData.options.switch_mode === 'modifier_click') {
+      attachLongPressHandler(
+        toggleButton,
+        () => doToggle(id, false, faves, avoids, faveData),
+        () => doToggle(id, true, faves, avoids, faveData),
+      );
+    }
+
     insertAfterButton.after(toggleButton);
 
     applyElementStyling(el, state, faveData.options.block_action);

@@ -212,6 +212,16 @@ describe('mobile long press on toggle button', () => {
     vi.useRealTimers();
   });
 
+  function fakeTouchEvent(type: string, x = 0, y = 0): Event {
+    const event = new Event(type, { bubbles: true });
+
+    Object.defineProperty(event, 'touches', {
+      value: [{ clientX: x, clientY: y }],
+    });
+
+    return event;
+  }
+
   it('long press sets avoid in modifier_click mode', () => {
     const el = createStoryletElement(100, 'storylet');
 
@@ -225,7 +235,7 @@ describe('mobile long press on toggle button', () => {
 
     const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
 
-    toggleBtn.dispatchEvent(new Event('touchstart'));
+    toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     vi.advanceTimersByTime(500);
 
     expect(data.storylet_avoids.has(100)).toBe(true);
@@ -244,8 +254,8 @@ describe('mobile long press on toggle button', () => {
 
     const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
 
-    toggleBtn.dispatchEvent(new Event('touchstart'));
-    toggleBtn.dispatchEvent(new Event('touchend'));
+    toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
+    toggleBtn.dispatchEvent(fakeTouchEvent('touchend'));
 
     expect(data.storylet_faves.has(100)).toBe(true);
   });
@@ -261,7 +271,7 @@ describe('mobile long press on toggle button', () => {
 
     const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
 
-    toggleBtn.dispatchEvent(new Event('touchstart'));
+    toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     vi.advanceTimersByTime(500);
 
     // No state change from touch — only click handler should work

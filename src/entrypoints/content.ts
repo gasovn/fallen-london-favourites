@@ -229,7 +229,10 @@ export default defineContentScript({
     ctx.addEventListener(document, 'click', protectAvoids, { capture: true });
 
     if (isMobile()) {
+      const MOVE_THRESHOLD = 10;
       let timer: ReturnType<typeof setTimeout> | null = null;
+      let startX = 0;
+      let startY = 0;
 
       ctx.addEventListener(
         document,
@@ -240,6 +243,9 @@ export default defineContentScript({
           if (!touch) {
             return;
           }
+
+          startX = touch.clientX;
+          startY = touch.clientY;
 
           // pointer-events: none means the touch target is behind the button,
           // so we find .pf-disabled elements by hit-testing their bounding rects
@@ -270,6 +276,31 @@ export default defineContentScript({
               disabled.style.pointerEvents = '';
             }, faveData.options.protectInterval);
           }, LONG_PRESS_MS);
+        }) as EventListener,
+        { passive: true },
+      );
+
+      ctx.addEventListener(
+        document,
+        'touchmove',
+        ((e: TouchEvent) => {
+          if (!timer) {
+            return;
+          }
+
+          const touch = e.touches[0];
+
+          if (!touch) {
+            return;
+          }
+
+          const dx = touch.clientX - startX;
+          const dy = touch.clientY - startY;
+
+          if (dx * dx + dy * dy > MOVE_THRESHOLD * MOVE_THRESHOLD) {
+            clearTimeout(timer);
+            timer = null;
+          }
         }) as EventListener,
         { passive: true },
       );

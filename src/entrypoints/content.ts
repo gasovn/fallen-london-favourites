@@ -205,7 +205,7 @@ export default defineContentScript({
     }
 
     ctx.onInvalidated(() => {
-      console.log(`Playing Favourites ${version} content script invalidated`);
+      console.log(`Fallen London Favourites ${version} content script invalidated`);
 
       if (wrapObserver) {
         wrapObserver.disconnect();
@@ -218,7 +218,7 @@ export default defineContentScript({
       browser.storage.onChanged.removeListener(onStorageChange);
     });
 
-    console.log(`Playing Favourites ${version} injected`);
+    console.log(`Fallen London Favourites ${version} injected`);
 
     browser.storage.onChanged.addListener(onStorageChange);
 

@@ -159,7 +159,7 @@ export function parseCards(faveData: FaveData): void {
     const toggleButton = document.createElement('button');
 
     toggleButton.className = 'card_toggle_button';
-    toggleButton.title = 'Playing Favourites: toggle favourite';
+    toggleButton.title = 'Toggle favourite';
     toggleButton.dataset.toggleId = String(cardId);
     toggleButton.addEventListener('click', toggleHandler);
 

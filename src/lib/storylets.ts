@@ -78,7 +78,7 @@ function createToggleButton(id: number, state: FaveState, isLocked: boolean): HT
 
   btn.type = 'image';
   btn.className = 'fave_toggle_button';
-  btn.title = 'Playing Favourites: toggle favourite';
+  btn.title = 'Toggle favourite';
   btn.src = getToggleImageUrl(state);
   btn.dataset.active = String(isLocked);
   btn.dataset.toggleId = String(id);

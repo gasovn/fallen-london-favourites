@@ -7,7 +7,7 @@ export default defineConfig({
     name: 'Fallen London Favourites',
     short_name: 'Fallen London Favourites',
     description:
-      'Mark storylets, branches and cards as favourite or avoided in Fallen London. Favourites float to the top, avoided ones sink to the bottom. Optional click protection on avoided choices.',
+      'Mark storylets, branches and cards as favourite or avoided in Fallen London. Favourites rise to the top, avoided sink to the bottom.',
     version: pkg.version,
     icons: {
       '16': 'img/icon16.png',

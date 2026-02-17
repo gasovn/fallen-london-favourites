@@ -1,15 +1,17 @@
-# Playing Favourites for Fallen London
+# Fallen London Favourites
 
 A rewrite of [Playing Favourites](https://github.com/kav2k/fl_favourites) by [Alexander Kashev](https://github.com/kav2k)
 
-An unofficial browser extension for Fallen London that lets you mark branches, storylets and cards as favourite or avoided.
+Mark storylets, branches and cards as favourite or avoided in Fallen London. Favourites rise to the top, avoided sink to the bottom.
 
 ## Features
 
-- Mark branches, storylets and card discards as favourite (green) or avoided (red)
-- Marked choices float to the top or bottom (configurable)
-- Optional click protection on avoided branches
-- Settings sync across browsers via Chrome Sync / Firefox Account
+- Green/red highlights on favourite and avoided choices
+- Automatic reordering: favourites up, avoided down (configurable)
+- Optional click protection on avoided choices (Shift to bypass, long press on mobile)
+- Two click modes: cycle through states, or click/Ctrl+Click (tap/long press on mobile)
+- Settings sync across devices via Chrome Sync / Firefox Account
+- Firefox for Android supported
 
 <p>
 <img src="store-assets/screenshots/01-readme-fave.png" alt="Favourite storylets highlighted in green" width="420">

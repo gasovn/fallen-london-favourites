@@ -1,3 +1,14 @@
+Version 0.6.4
+
+* Click protection "SURE?" on avoided and faved cards
+* Long press to avoid on mobile, touch bypass for blocked buttons
+* Cancel long press when finger moves during scroll
+* Options page redesign with Fallen London dark theme
+* Fix wrapObserver losing track of #main when React replaces it
+* Fix protectAvoids not triggering when clicking button padding
+* Unified extension naming and store descriptions
+* Tests for cards and platform modules
+
 Version 0.6.3
 
 * Added Firefox for Android support

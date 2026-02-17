@@ -29,6 +29,9 @@ export default defineContentScript({
 
     let wrapObserver: MutationObserver | null = null;
     let mainObserver: MutationObserver | null = null;
+    // Element identity, not just presence — React can replace #main
+    // in a single mutation batch, which a boolean flag would miss.
+    let observedMain: Element | null = null;
 
     // Debounce flag to coalesce rapid MutationObserver callbacks
     let parseScheduled = false;
@@ -104,6 +107,8 @@ export default defineContentScript({
         mainObserver.disconnect();
       }
 
+      observedMain = mainEl;
+
       mainObserver = new MutationObserver(() => {
         scheduleParse();
       });
@@ -116,22 +121,16 @@ export default defineContentScript({
     async function startWrapObserver(): Promise<void> {
       const root = document.getElementById('root') ?? document.body;
 
-      // Track whether #main exists to only react when it appears/disappears,
-      // not on every childList change (our toggle buttons, reorder markers, etc.)
-      let mainPresent = !!document.getElementById('main');
-
       wrapObserver = new MutationObserver(async () => {
         const mainEl = document.getElementById('main');
-        const nowPresent = !!mainEl;
 
-        if (nowPresent && !mainPresent) {
-          // #main just appeared — initialize
-          mainPresent = true;
+        if (mainEl && mainEl !== observedMain) {
+          // #main appeared or was replaced by React — (re)initialize
           await loadData();
-          startMainObserver(mainEl!);
-        } else if (!nowPresent && mainPresent) {
+          startMainObserver(mainEl);
+        } else if (!mainEl && observedMain) {
           // #main removed — clean up
-          mainPresent = false;
+          observedMain = null;
 
           if (mainObserver) {
             mainObserver.disconnect();
@@ -145,9 +144,11 @@ export default defineContentScript({
       });
 
       // Handle re-inject after extension update
-      if (mainPresent) {
+      const mainEl = document.getElementById('main');
+
+      if (mainEl) {
         await loadData();
-        startMainObserver(document.getElementById('main')!);
+        startMainObserver(mainEl);
       }
     }
 

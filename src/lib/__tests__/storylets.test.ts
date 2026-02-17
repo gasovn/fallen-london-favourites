@@ -156,6 +156,52 @@ describe('parseStorylets', () => {
     expect(storylet1.parentElement).toBe(main);
     expect(storylet2.parentElement).toBe(main);
   });
+
+  it('block_action disables go button on avoided storylets', () => {
+    main.appendChild(createStoryletElement(100, 'storylet'));
+
+    parseStorylets(
+      makeFaveData({
+        storylet_avoids: new Set([100]),
+        options: {
+          branch_reorder_mode: 'branch_no_reorder',
+          switch_mode: 'click_through',
+          block_action: true,
+        },
+      }),
+    );
+
+    const goButton = main.querySelector('.button--go')!;
+
+    expect(goButton.classList.contains('pf-disabled')).toBe(true);
+    expect(goButton.classList.contains('button--disabled')).toBe(true);
+  });
+
+  it('moves faved storylets before neutral ones', () => {
+    const s1 = createStoryletElement(100, 'storylet');
+    const s2 = createStoryletElement(101, 'storylet');
+    const s3 = createStoryletElement(102, 'storylet');
+
+    main.appendChild(s1);
+    main.appendChild(s2);
+    main.appendChild(s3);
+
+    parseStorylets(
+      makeFaveData({
+        storylet_faves: new Set([102]),
+        options: {
+          branch_reorder_mode: 'branch_reorder_active',
+          switch_mode: 'click_through',
+          block_action: false,
+        },
+      }),
+      true,
+    );
+
+    const storylets = main.querySelectorAll('.storylet');
+
+    expect(storylets[0].getAttribute('data-branch-id')).toBe('102');
+  });
 });
 
 describe('mobile long press on toggle button', () => {
@@ -238,6 +284,27 @@ describe('mobile long press on toggle button', () => {
     vi.advanceTimersByTime(500);
 
     // No state change from touch — only click handler should work
+    expect(data.storylet_faves.has(100)).toBe(false);
+    expect(data.storylet_avoids.has(100)).toBe(false);
+  });
+
+  it('touchmove beyond threshold cancels long press', () => {
+    const el = createStoryletElement(100, 'storylet');
+
+    main.appendChild(el);
+
+    const data = makeFaveData({
+      options: { ...makeFaveData().options, switch_mode: 'modifier_click' },
+    });
+
+    parseStorylets(data);
+
+    const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
+
+    toggleBtn.dispatchEvent(fakeTouchEvent('touchstart', 0, 0));
+    toggleBtn.dispatchEvent(fakeTouchEvent('touchmove', 20, 0));
+    vi.advanceTimersByTime(500);
+
     expect(data.storylet_faves.has(100)).toBe(false);
     expect(data.storylet_avoids.has(100)).toBe(false);
   });

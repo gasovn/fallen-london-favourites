@@ -1,93 +1,125 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fallen London Favourites — Options</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
 
   <body>
-    <p>
-      <a href="#" id="changelogLink">Show changelog</a>
-      <a href="#" id="changelogHideLink" class="changelogHideLink">Hide changelog</a>
-    </p>
+    <div class="page">
+      <header class="page-header">
+        <h1>Fallen London Favourites</h1>
+      </header>
 
-    <hr />
+      <div class="settings">
+        <section class="card">
+          <h2>Reordering</h2>
+          <p class="card-description">
+            Choose how favourite and avoided storylets are ordered in the list.
+          </p>
 
-    <div id="optionsContainer" class="container">
-      <div class="header">Branch/storylet reordering</div>
+          <form>
+            <label class="option">
+              <input type="radio" value="branch_no_reorder" name="branch_reorder_mode" />
+              <span class="option-content">
+                <span class="option-label">Highlight only</span>
+                <span class="option-hint">Colour-code choices without changing their order</span>
+              </span>
+            </label>
 
-      <form>
-        <p class="item">
-          <label>
-            <input type="radio" value="branch_no_reorder" name="branch_reorder_mode" />
-            Highlight all, no reordering
-          </label>
-        </p>
+            <label class="option">
+              <input type="radio" value="branch_reorder_active" name="branch_reorder_mode" />
+              <span class="option-content">
+                <span class="option-label">Reorder unlocked</span>
+                <span class="option-hint">Move unlocked favourites up and avoided down</span>
+              </span>
+            </label>
 
-        <p class="item">
-          <label>
-            <input type="radio" value="branch_reorder_active" name="branch_reorder_mode" />
-            Highlight all, float active to the top/bottom
-          </label>
-        </p>
+            <label class="option">
+              <input type="radio" value="branch_reorder_all" name="branch_reorder_mode" />
+              <span class="option-content">
+                <span class="option-label">Reorder all</span>
+                <span class="option-hint">Also reorder locked storylets and branches</span>
+              </span>
+            </label>
+          </form>
+        </section>
 
-        <p class="item">
-          <input type="radio" value="branch_reorder_all" name="branch_reorder_mode" />
-          <label> Highlight and float all to the top/bottom </label>
-        </p>
-      </form>
+        <section class="card">
+          <h2>Click mode</h2>
+          <p class="card-description">
+            How the toggle button cycles between favourite, avoid, and neutral.
+          </p>
 
-      <div class="header">Click mode</div>
+          <form>
+            <label class="option">
+              <input type="radio" value="click_through" name="switch_mode" />
+              <span
+                class="option-content"
+                data-mobile-text="Tap to cycle: Favourite → Avoid → Neutral"
+              >
+                <span class="option-label">Cycle</span>
+                <span class="option-hint">Click to cycle: Favourite → Avoid → Neutral</span>
+              </span>
+            </label>
 
-      <form>
-        <p class="item">
-          <label>
-            <input type="radio" value="click_through" name="switch_mode" />
-            Click through: Favourite &rarr; Avoid &rarr; Neutral
-          </label>
-        </p>
+            <label class="option">
+              <input type="radio" value="modifier_click" name="switch_mode" />
+              <span
+                class="option-content"
+                data-mobile-text="Tap for favourite, long press for avoid"
+              >
+                <span class="option-label">Modifier click</span>
+                <span class="option-hint">Click for favourite, Ctrl+Click for avoid</span>
+              </span>
+            </label>
+          </form>
+        </section>
 
-        <p class="item">
-          <label data-mobile-text="Tap to set Favourite, long press to set Avoid">
-            <input type="radio" value="modifier_click" name="switch_mode" />
-            Click to set Favourite, Ctrl+Click to set Avoid
-          </label>
-        </p>
-      </form>
+        <section class="card">
+          <h2>Click protection</h2>
+          <p class="card-description">Prevent accidental actions on avoided storylets and cards.</p>
 
-      <div class="header">Block actions</div>
+          <form>
+            <label class="option">
+              <input type="radio" value="false" name="block_action" />
+              <span class="option-content">
+                <span class="option-label">Off</span>
+              </span>
+            </label>
 
-      <form>
-        <p class="item">
-          <label>
-            <input type="radio" value="false" name="block_action" />
-            Allow clicks on buttons and cards
-          </label>
-        </p>
+            <label class="option">
+              <input type="radio" value="true" name="block_action" />
+              <span
+                class="option-content"
+                data-mobile-text="Require confirmation. Long press to bypass"
+              >
+                <span class="option-label">On</span>
+                <span class="option-hint">Require confirmation. Hold Shift to bypass</span>
+              </span>
+            </label>
+          </form>
+        </section>
+      </div>
 
-        <p class="item">
-          <label data-mobile-text="Block taps on buttons and cards. Long press to bypass">
-            <input type="radio" value="true" name="block_action" />
-            Block clicks on buttons and cards. Hold Shift to bypass
-          </label>
-        </p>
-      </form>
+      <details class="changelog-details">
+        <summary>Changelog</summary>
+        <pre id="changelogText" class="changelog"></pre>
+      </details>
+
+      <footer class="page-footer">
+        <div class="footer-links">
+          <a href="https://github.com/gasovn/fallen-london-favourites/issues" target="_blank"
+            >Report a bug</a
+          >
+          <span class="footer-separator">&middot;</span>
+          <a href="mailto:forest.vvolf@gmail.com">Contact</a>
+        </div>
+        <span class="footer-version" id="extensionVersion"></span>
+      </footer>
     </div>
-
-    <div id="changelogContainer" class="container">
-      <pre id="changelogText" class="changelog"></pre>
-    </div>
-
-    <hr />
-
-    <p class="feedback">
-      <a href="https://github.com/gasovn/fallen-london-favourites/issues" target="_blank"
-        >Report a bug</a
-      >
-      &middot;
-      <a href="mailto:forest.vvolf@gmail.com">Contact</a>
-    </p>
 
     <script type="module" src="./main.ts"></script>
   </body>

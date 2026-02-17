@@ -43,19 +43,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (isMobile()) {
-    const mobileLabels = document.querySelectorAll<HTMLElement>('[data-mobile-text]');
+    const mobileElements = document.querySelectorAll<HTMLElement>('[data-mobile-text]');
 
-    for (const label of mobileLabels) {
-      const input = label.querySelector('input');
-      const mobileText = label.dataset.mobileText ?? '';
+    for (const el of mobileElements) {
+      const mobileText = el.dataset.mobileText ?? '';
 
-      label.textContent = '';
-
-      if (input) {
-        label.appendChild(input);
-      }
-
-      label.append(` ${mobileText}`);
+      el.textContent = mobileText;
     }
   }
 
@@ -73,47 +66,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Silently ignore changelog load failures
   }
 
-  const optionsContainer = document.getElementById('optionsContainer');
+  const versionEl = document.getElementById('extensionVersion');
 
-  if (optionsContainer) {
-    optionsContainer.style.display = 'block';
-  }
-
-  const changelogLink = document.getElementById('changelogLink');
-  const changelogHideLink = document.getElementById('changelogHideLink');
-  const changelogContainer = document.getElementById('changelogContainer');
-
-  if (changelogLink && changelogHideLink && changelogContainer && optionsContainer) {
-    changelogLink.addEventListener('click', (e) => {
-      e.preventDefault();
-
-      const containers = document.querySelectorAll<HTMLElement>('.container');
-
-      for (const container of containers) {
-        if (container.id !== 'changelogContainer') {
-          container.style.display = 'none';
-        }
-      }
-
-      changelogContainer.style.display = 'block';
-      changelogLink.style.display = 'none';
-      changelogHideLink.style.display = 'inline';
-    });
-
-    changelogHideLink.addEventListener('click', (e) => {
-      e.preventDefault();
-
-      const containers = document.querySelectorAll<HTMLElement>('.container');
-
-      for (const container of containers) {
-        if (container.id !== 'optionsContainer') {
-          container.style.display = 'none';
-        }
-      }
-
-      optionsContainer.style.display = 'block';
-      changelogLink.style.display = 'inline';
-      changelogHideLink.style.display = 'none';
-    });
+  if (versionEl) {
+    versionEl.textContent = `v${browser.runtime.getManifest().version}`;
   }
 });

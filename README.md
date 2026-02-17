@@ -18,7 +18,12 @@ Mark storylets, branches and cards as favourite or avoided in Fallen London. Fav
 <img src="store-assets/screenshots/02-readme-avoid.png" alt="Avoided storylets highlighted in red" width="420">
 </p>
 
-<img src="store-assets/screenshots/03-readme-cards.png" alt="Cards with favourite and avoid status, click protection" width="540">
+<p>
+<img src="store-assets/screenshots/03-readme-cards.png" alt="Cards with favourite and avoid status, click protection" width="420">
+<img src="store-assets/screenshots/05-mobile-storylets.jpg" alt="Storylets on Firefox for Android with click protection" width="220">
+</p>
+
+<img src="store-assets/screenshots/04-options.png" alt="Options page with Fallen London theme" width="540">
 
 ## Install
 

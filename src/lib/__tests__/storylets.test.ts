@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { parseStorylets, fillClickHandlers } from '../storylets';
+import { parseStorylets } from '../storylets';
 import { isMobile } from '../platform';
 import type { FaveData } from '@/types';
 
@@ -37,7 +37,6 @@ function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
       branch_reorder_mode: 'branch_no_reorder',
       switch_mode: 'click_through',
       block_action: false,
-      protectInterval: 5000,
     },
     ...overrides,
   };
@@ -144,7 +143,6 @@ describe('parseStorylets', () => {
           branch_reorder_mode: 'branch_reorder_active',
           switch_mode: 'click_through',
           block_action: false,
-          protectInterval: 5000,
         },
       }),
       true,
@@ -157,41 +155,6 @@ describe('parseStorylets', () => {
     // Regular storylets must stay outside the disclosure container
     expect(storylet1.parentElement).toBe(main);
     expect(storylet2.parentElement).toBe(main);
-  });
-});
-
-describe('fillClickHandlers', () => {
-  let main: HTMLElement;
-
-  beforeEach(() => {
-    document.body.innerHTML = '';
-    main = document.createElement('div');
-    main.id = 'main';
-    document.body.appendChild(main);
-  });
-
-  it('sets originalValue on .storylet .button--go', () => {
-    const el = createStoryletElement(100, 'storylet');
-    const btn = el.querySelector('.button--go') as HTMLButtonElement;
-
-    btn.value = 'Go';
-    main.appendChild(el);
-
-    fillClickHandlers();
-
-    expect(btn.dataset.originalValue).toBe('Go');
-  });
-
-  it('sets originalValue on .persistent .button--go', () => {
-    const el = createStoryletElement(200, 'persistent');
-    const btn = el.querySelector('.button--go') as HTMLButtonElement;
-
-    btn.value = 'Go';
-    main.appendChild(el);
-
-    fillClickHandlers();
-
-    expect(btn.dataset.originalValue).toBe('Go');
   });
 });
 

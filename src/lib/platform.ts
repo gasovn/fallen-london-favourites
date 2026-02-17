@@ -15,6 +15,8 @@ export function isMobile(): boolean {
 
 export const MOVE_THRESHOLD = 10;
 
+export const PROTECT_INTERVAL_MS = 5000;
+
 export function attachLongPressHandler(
   button: HTMLInputElement | HTMLButtonElement,
   onShortPress: () => void,

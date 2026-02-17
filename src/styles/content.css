@@ -1,5 +1,4 @@
 /* Needed for bypassing FL's specificity nightmares */
-/*csslint adjoining-classes:false*/
 
 #main .storylet_favourite {
   outline: thin solid lime;

@@ -20,7 +20,7 @@ export function packSet(set: Set<number>, storageKey: string): Record<string, un
 }
 
 export function unpackSet(data: Record<string, unknown>, storageKey: string): Set<number> {
-  let result = new Set<number>();
+  const result = new Set<number>();
   const keys = data[`${storageKey}_keys`];
 
   if (Array.isArray(keys)) {
@@ -28,7 +28,9 @@ export function unpackSet(data: Record<string, unknown>, storageKey: string): Se
       const values = data[key];
 
       if (Array.isArray(values)) {
-        result = new Set([...result, ...values]);
+        for (const v of values) {
+          result.add(v);
+        }
       }
     }
   }
@@ -54,11 +56,12 @@ export async function setOption<K extends keyof DefaultStorageOptions>(
 
 export async function getOptions(): Promise<Record<string, unknown>> {
   const allData = await browser.storage.local.get(null);
-  const dataOverlay = await browser.storage.local.get(
-    DEFAULT_OPTIONS as unknown as Record<string, unknown>,
-  );
 
-  Object.assign(allData, dataOverlay);
+  for (const [key, defaultValue] of Object.entries(DEFAULT_OPTIONS)) {
+    if (!(key in allData)) {
+      allData[key] = defaultValue;
+    }
+  }
 
   return allData;
 }

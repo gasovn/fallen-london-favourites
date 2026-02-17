@@ -1,8 +1,8 @@
 import type { FaveData } from '@/types';
 import { getOptions, unpackSet } from '@/lib/storage';
-import { parseStorylets, fillClickHandlers, shiftHandler } from '@/lib/storylets';
+import { parseStorylets, shiftHandler } from '@/lib/storylets';
 import { parseCards } from '@/lib/cards';
-import { isMobile, LONG_PRESS_MS, MOVE_THRESHOLD } from '@/lib/platform';
+import { isMobile, LONG_PRESS_MS, MOVE_THRESHOLD, PROTECT_INTERVAL_MS } from '@/lib/platform';
 import '@/styles/content.css';
 
 export default defineContentScript({
@@ -23,7 +23,6 @@ export default defineContentScript({
         branch_reorder_mode: 'branch_reorder_active',
         switch_mode: 'click_through',
         block_action: false,
-        protectInterval: 5000,
       },
     };
 
@@ -61,7 +60,6 @@ export default defineContentScript({
             'branch_reorder_active',
           switch_mode: (data.switch_mode as FaveData['options']['switch_mode']) ?? 'click_through',
           block_action: data.block_action === true,
-          protectInterval: 5000,
         },
       };
     }
@@ -74,7 +72,6 @@ export default defineContentScript({
         mainObserver.disconnect();
       }
 
-      fillClickHandlers();
       parseStorylets(faveData, reorder);
       parseCards(faveData);
 
@@ -174,10 +171,7 @@ export default defineContentScript({
       const now = Date.now();
       const lastTimestamp = parseInt(button.dataset.protectTimestamp ?? '0', 10);
 
-      if (
-        !button.dataset.protectTimestamp ||
-        now - lastTimestamp >= faveData.options.protectInterval
-      ) {
+      if (!button.dataset.protectTimestamp || now - lastTimestamp >= PROTECT_INTERVAL_MS) {
         e.stopImmediatePropagation();
         e.preventDefault();
 
@@ -191,7 +185,7 @@ export default defineContentScript({
         ctx.setTimeout(() => {
           button.classList.remove('button-protected');
           confirmText.remove();
-        }, faveData.options.protectInterval);
+        }, PROTECT_INTERVAL_MS);
 
         button.dataset.protectTimestamp = String(now);
       }
@@ -276,7 +270,7 @@ export default defineContentScript({
             disabled.click();
             setTimeout(() => {
               disabled.style.pointerEvents = '';
-            }, faveData.options.protectInterval);
+            }, PROTECT_INTERVAL_MS);
           }, LONG_PRESS_MS);
         }) as EventListener,
         { passive: true },

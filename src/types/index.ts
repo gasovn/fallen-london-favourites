@@ -13,7 +13,6 @@ export interface Options {
   branch_reorder_mode: BranchReorderMode;
   switch_mode: SwitchMode;
   block_action: boolean;
-  protectInterval: number;
 }
 
 export interface DefaultStorageOptions {

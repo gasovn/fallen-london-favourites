@@ -11,18 +11,6 @@ import {
 import { isMobile, attachLongPressHandler } from '@/lib/platform';
 import { queryLast } from '@/lib/dom';
 
-export function fillClickHandlers(): void {
-  const buttons = document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
-    '.storylet .button--go, .persistent .button--go, .card__discard-button',
-  );
-
-  buttons.forEach((btn) => {
-    if (!btn.dataset.originalValue) {
-      btn.dataset.originalValue = btn.value;
-    }
-  });
-}
-
 export function shiftHandler(e: KeyboardEvent): void {
   const shiftPressed = e.shiftKey;
   const main = document.getElementById('main');

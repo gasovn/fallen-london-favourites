@@ -7,14 +7,7 @@ export const ICON_SUFFIX: Record<FaveState, string> = {
   none: 'empty',
 };
 
-export interface FaveSets {
-  branch_faves: Set<number>;
-  branch_avoids: Set<number>;
-  storylet_faves: Set<number>;
-  storylet_avoids: Set<number>;
-  card_faves: Set<number>;
-  card_avoids: Set<number>;
-}
+export type FaveSets = Omit<FaveData, 'options'>;
 
 export function getCurrentState(id: number, faves: Set<number>, avoids: Set<number>): FaveState {
   if (faves.has(id)) {

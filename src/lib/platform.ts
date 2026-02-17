@@ -13,7 +13,7 @@ export function isMobile(): boolean {
   return navigator.userAgentData?.mobile ?? /Android|Mobile/i.test(navigator.userAgent);
 }
 
-const MOVE_THRESHOLD = 10;
+export const MOVE_THRESHOLD = 10;
 
 export function attachLongPressHandler(
   button: HTMLInputElement | HTMLButtonElement,

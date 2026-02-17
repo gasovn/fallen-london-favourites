@@ -9,6 +9,7 @@ import {
   ICON_SUFFIX,
 } from '@/lib/toggle';
 import { isMobile, attachLongPressHandler } from '@/lib/platform';
+import { queryLast } from '@/lib/dom';
 
 export function fillClickHandlers(): void {
   const buttons = document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
@@ -52,7 +53,7 @@ function applyElementStyling(element: HTMLElement, state: FaveState, blockAction
   element.classList.toggle('storylet_avoid', state === 'avoid');
 
   // Only avoided items get disabled, and only when block_action is enabled
-  const goButton = lastElementBySelector(element, '.button--go');
+  const goButton = queryLast(element, '.button--go');
 
   if (!goButton) {
     return;
@@ -65,12 +66,6 @@ function applyElementStyling(element: HTMLElement, state: FaveState, blockAction
     goButton.classList.remove('pf-disabled');
     goButton.classList.remove('button--disabled');
   }
-}
-
-function lastElementBySelector(parent: HTMLElement, selector: string): HTMLElement | null {
-  const all = parent.querySelectorAll<HTMLElement>(selector);
-
-  return all.length > 0 ? all[all.length - 1] : null;
 }
 
 function createToggleButton(id: number, state: FaveState, isLocked: boolean): HTMLInputElement {
@@ -110,7 +105,12 @@ function makeToggleHandler(
     e.preventDefault();
 
     const target = e.currentTarget as HTMLInputElement;
-    const id = parseInt(target.dataset.toggleId ?? '0', 10);
+    const id = parseInt(target.dataset.toggleId ?? '', 10);
+
+    if (isNaN(id)) {
+      return;
+    }
+
     const isModifier = e.metaKey || e.ctrlKey;
 
     await doToggle(id, isModifier, faves, avoids, faveData);
@@ -138,6 +138,11 @@ function processElements(
     }
 
     const id = parseInt(match, 10);
+
+    if (isNaN(id)) {
+      return;
+    }
+
     const isLocked = el.classList.contains('media--locked');
 
     el.querySelectorAll('.fave_toggle_button').forEach((btn) => btn.remove());

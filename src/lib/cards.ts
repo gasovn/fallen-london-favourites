@@ -9,12 +9,7 @@ import {
   ICON_SUFFIX,
 } from '@/lib/toggle';
 import { isMobile, attachLongPressHandler } from '@/lib/platform';
-
-function queryLast(parent: Element, selector: string): HTMLElement | null {
-  const all = parent.querySelectorAll<HTMLElement>(selector);
-
-  return all.length > 0 ? all[all.length - 1] : null;
-}
+import { queryLast } from '@/lib/dom';
 
 // Hand cards use card_*.png (16x16), small cards use button_*.png (30x30)
 function getCardButtonImageUrl(container: Element, state: FaveState): string {

@@ -2,7 +2,7 @@ import type { FaveData } from '@/types';
 import { getOptions, unpackSet } from '@/lib/storage';
 import { parseStorylets, fillClickHandlers, shiftHandler } from '@/lib/storylets';
 import { parseCards } from '@/lib/cards';
-import { isMobile, LONG_PRESS_MS } from '@/lib/platform';
+import { isMobile, LONG_PRESS_MS, MOVE_THRESHOLD } from '@/lib/platform';
 import '@/styles/content.css';
 
 export default defineContentScript({
@@ -232,7 +232,6 @@ export default defineContentScript({
     ctx.addEventListener(document, 'click', protectAvoids, { capture: true });
 
     if (isMobile()) {
-      const MOVE_THRESHOLD = 10;
       let timer: ReturnType<typeof setTimeout> | null = null;
       let startX = 0;
       let startY = 0;

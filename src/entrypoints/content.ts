@@ -162,7 +162,9 @@ export default defineContentScript({
         return;
       }
 
-      const button = target.closest<HTMLElement>('.storylet_avoid .button--go, .button_avoid');
+      const button = target.closest<HTMLElement>(
+        '.storylet_avoid .button--go, .button_avoid, .card_avoid .hand__card, .card_avoid .button--margin',
+      );
 
       if (!button) {
         return;

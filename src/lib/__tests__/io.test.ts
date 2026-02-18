@@ -426,3 +426,121 @@ describe('importData', () => {
     expect(callOrder).toEqual(['clear', 'set']);
   });
 });
+
+describe('round-trip: export → import → export', () => {
+  let storage: Record<string, unknown>;
+
+  function useStatefulMocks(initial: Record<string, unknown>): void {
+    storage = { ...initial };
+    mockGet.mockImplementation(() => Promise.resolve({ ...storage }));
+    mockSet.mockImplementation((items) => {
+      Object.assign(storage, items);
+
+      return Promise.resolve();
+    });
+    mockClear.mockImplementation(() => {
+      storage = {};
+
+      return Promise.resolve();
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('produces identical exports', async () => {
+    useStatefulMocks({
+      storage_schema: STORAGE_SCHEMA_VERSION,
+      branch_reorder_mode: 'branch_reorder_all',
+      switch_mode: 'modifier_click',
+      click_protection: 'shift',
+      ...packSet(new Set([101, 202, 303]), 'branch_faves'),
+      ...packSet(new Set([401]), 'branch_avoids'),
+      ...packSet(new Set([10, 20]), 'storylet_faves'),
+      ...packSet(new Set([30]), 'storylet_avoids'),
+      ...packSet(new Set([1, 2, 3]), 'card_faves'),
+      ...packSet(new Set([5, 6]), 'card_avoids'),
+    });
+
+    const exported1 = await exportData();
+
+    await importData(exported1);
+
+    const exported2 = await exportData();
+
+    expect({ ...exported2, exported_at: '' }).toEqual({ ...exported1, exported_at: '' });
+  });
+
+  it('preserves all data arrays through the cycle', async () => {
+    useStatefulMocks({
+      storage_schema: STORAGE_SCHEMA_VERSION,
+      ...packSet(new Set([101, 202]), 'branch_faves'),
+      ...packSet(new Set([301]), 'branch_avoids'),
+      ...packSet(new Set([10]), 'storylet_faves'),
+      ...packSet(new Set([20]), 'storylet_avoids'),
+      ...packSet(new Set([1, 2]), 'card_faves'),
+      ...packSet(new Set([5]), 'card_avoids'),
+    });
+
+    const exported = await exportData();
+
+    await importData(exported);
+
+    expect(unpackSet(storage, 'branch_faves')).toEqual(new Set([101, 202]));
+    expect(unpackSet(storage, 'branch_avoids')).toEqual(new Set([301]));
+    expect(unpackSet(storage, 'storylet_faves')).toEqual(new Set([10]));
+    expect(unpackSet(storage, 'storylet_avoids')).toEqual(new Set([20]));
+    expect(unpackSet(storage, 'card_faves')).toEqual(new Set([1, 2]));
+    expect(unpackSet(storage, 'card_avoids')).toEqual(new Set([5]));
+    expect(storage.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
+  });
+
+  it('works with empty data sets', async () => {
+    useStatefulMocks({
+      storage_schema: STORAGE_SCHEMA_VERSION,
+      branch_faves_keys: [],
+      branch_avoids_keys: [],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_faves_keys: [],
+      card_avoids_keys: [],
+    });
+
+    const exported1 = await exportData();
+
+    await importData(exported1);
+
+    const exported2 = await exportData();
+
+    expect({ ...exported2, exported_at: '' }).toEqual({ ...exported1, exported_at: '' });
+    expect(exported1.data.branch_faves).toEqual([]);
+  });
+
+  it('v1 import then export produces v2 format without block_action', async () => {
+    useStatefulMocks({});
+
+    const v1File = validExport({
+      version: 1,
+      options: {
+        branch_reorder_mode: 'branch_reorder_active',
+        switch_mode: 'click_through',
+        block_action: true,
+      },
+    });
+
+    const validated = validateImport(v1File);
+
+    expect(validated.valid).toBe(true);
+
+    if (validated.valid) {
+      await importData(validated.data);
+    }
+
+    const exported = await exportData();
+
+    expect(exported.version).toBe(EXPORT_VERSION);
+    expect(exported.options.click_protection).toBe('shift');
+    expect((exported.options as unknown as Record<string, unknown>).block_action).toBeUndefined();
+  });
+});

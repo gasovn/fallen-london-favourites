@@ -103,6 +103,86 @@ body {
   color: #a8a29e;
 }
 
+/* === Data === */
+
+.data-card {
+  margin-top: 12px;
+}
+
+.data-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.data-btn {
+  background: #44403c;
+  color: #e7e5e4;
+  border: 1px solid #57534e;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.data-btn:hover {
+  background: #57534e;
+}
+
+.data-btn--danger {
+  background: #7f1d1d;
+  border-color: #991b1b;
+}
+
+.data-btn--danger:hover {
+  background: #991b1b;
+}
+
+.import-preview {
+  margin-top: 12px;
+  padding: 12px;
+  background: #1c1917;
+  border: 1px solid #44403c;
+  border-radius: 4px;
+}
+
+.import-stats {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 12px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.import-stats dt {
+  color: #a8a29e;
+}
+
+.import-stats dd {
+  color: #e7e5e4;
+  text-align: right;
+}
+
+.import-warning {
+  font-size: 12px;
+  color: #f87171;
+  margin-bottom: 10px;
+}
+
+.import-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.import-message {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.import-message--error {
+  color: #f87171;
+}
+
 /* === Changelog === */
 
 .changelog-details {

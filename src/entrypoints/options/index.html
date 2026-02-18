@@ -104,6 +104,45 @@
         </section>
       </div>
 
+      <section class="card data-card">
+        <h2>Data</h2>
+        <p class="card-description">Transfer your favourites and settings between browsers.</p>
+
+        <div class="data-actions">
+          <button type="button" id="exportBtn" class="data-btn">Export</button>
+          <button type="button" id="importBtn" class="data-btn">Import</button>
+          <input type="file" id="importFile" accept=".json" hidden />
+        </div>
+
+        <div id="importPreview" class="import-preview" hidden>
+          <dl class="import-stats">
+            <dt>Exported</dt>
+            <dd id="previewDate"></dd>
+            <dt>Branch favourites</dt>
+            <dd id="previewBranchFaves"></dd>
+            <dt>Branch avoids</dt>
+            <dd id="previewBranchAvoids"></dd>
+            <dt>Storylet favourites</dt>
+            <dd id="previewStoryletFaves"></dd>
+            <dt>Storylet avoids</dt>
+            <dd id="previewStoryletAvoids"></dd>
+            <dt>Card favourites</dt>
+            <dd id="previewCardFaves"></dd>
+            <dt>Card avoids</dt>
+            <dd id="previewCardAvoids"></dd>
+          </dl>
+          <p class="import-warning">This will replace all your current data.</p>
+          <div class="import-confirm-actions">
+            <button type="button" id="confirmImportBtn" class="data-btn data-btn--danger">
+              Confirm import
+            </button>
+            <button type="button" id="cancelImportBtn" class="data-btn">Cancel</button>
+          </div>
+        </div>
+
+        <p id="importError" class="import-message import-message--error" hidden></p>
+      </section>
+
       <details class="changelog-details">
         <summary>Changelog</summary>
         <pre id="changelogText" class="changelog"></pre>

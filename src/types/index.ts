@@ -50,3 +50,34 @@ export interface FaveData {
   card_avoids: Set<number>;
   options: Options;
 }
+
+export const EXPORT_FORMAT = 'fallen-london-favourites' as const;
+export const EXPORT_VERSION = 1;
+
+export const DATA_KEYS = [
+  'branch_faves',
+  'branch_avoids',
+  'storylet_faves',
+  'storylet_avoids',
+  'card_faves',
+  'card_avoids',
+] as const;
+
+export interface ExportData {
+  branch_faves: number[];
+  branch_avoids: number[];
+  storylet_faves: number[];
+  storylet_avoids: number[];
+  card_faves: number[];
+  card_avoids: number[];
+}
+
+export interface ExportFile {
+  format: typeof EXPORT_FORMAT;
+  version: number;
+  exported_at: string;
+  data: ExportData;
+  options: Options;
+}
+
+export type ImportResult = { valid: true; data: ExportFile } | { valid: false; error: string };

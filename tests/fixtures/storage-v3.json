@@ -1,0 +1,18 @@
+{
+  "storage_schema": 3,
+  "branch_reorder_mode": "branch_reorder_all",
+  "switch_mode": "modifier_click",
+  "block_action": true,
+  "branch_faves_keys": ["branch_faves_0"],
+  "branch_faves_0": [10245, 20310, 30412, 40587, 50691],
+  "branch_avoids_keys": ["branch_avoids_0"],
+  "branch_avoids_0": [11111, 22222, 33333],
+  "storylet_faves_keys": ["storylet_faves_0"],
+  "storylet_faves_0": [60123, 70456, 80789],
+  "storylet_avoids_keys": ["storylet_avoids_0"],
+  "storylet_avoids_0": [61001, 62002],
+  "card_faves_keys": ["card_faves_0"],
+  "card_faves_0": [90101, 90202, 90303, 90404, 90505],
+  "card_avoids_keys": ["card_avoids_0"],
+  "card_avoids_0": [91601, 91702, 91803]
+}

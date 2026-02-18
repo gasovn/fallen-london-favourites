@@ -36,7 +36,7 @@ function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
     options: {
       branch_reorder_mode: 'branch_no_reorder',
       switch_mode: 'click_through',
-      block_action: false,
+      click_protection: 'off',
     },
     ...overrides,
   };
@@ -142,7 +142,7 @@ describe('parseStorylets', () => {
         options: {
           branch_reorder_mode: 'branch_reorder_active',
           switch_mode: 'click_through',
-          block_action: false,
+          click_protection: 'off',
         },
       }),
       true,
@@ -157,7 +157,7 @@ describe('parseStorylets', () => {
     expect(storylet2.parentElement).toBe(main);
   });
 
-  it('block_action disables go button on avoided storylets', () => {
+  it('click_protection "shift" disables go button on avoided storylets', () => {
     main.appendChild(createStoryletElement(100, 'storylet'));
 
     parseStorylets(
@@ -166,7 +166,7 @@ describe('parseStorylets', () => {
         options: {
           branch_reorder_mode: 'branch_no_reorder',
           switch_mode: 'click_through',
-          block_action: true,
+          click_protection: 'shift',
         },
       }),
     );
@@ -175,6 +175,49 @@ describe('parseStorylets', () => {
 
     expect(goButton.classList.contains('pf-disabled')).toBe(true);
     expect(goButton.classList.contains('button--disabled')).toBe(true);
+    expect(goButton.classList.contains('pf-confirm')).toBe(false);
+  });
+
+  it('click_protection "confirm" adds pf-confirm without pf-disabled', () => {
+    main.appendChild(createStoryletElement(100, 'storylet'));
+
+    parseStorylets(
+      makeFaveData({
+        storylet_avoids: new Set([100]),
+        options: {
+          branch_reorder_mode: 'branch_no_reorder',
+          switch_mode: 'click_through',
+          click_protection: 'confirm',
+        },
+      }),
+    );
+
+    const goButton = main.querySelector('.button--go')!;
+
+    expect(goButton.classList.contains('pf-confirm')).toBe(true);
+    expect(goButton.classList.contains('pf-disabled')).toBe(false);
+    expect(goButton.classList.contains('button--disabled')).toBe(false);
+  });
+
+  it('click_protection "off" does not add protection classes', () => {
+    main.appendChild(createStoryletElement(100, 'storylet'));
+
+    parseStorylets(
+      makeFaveData({
+        storylet_avoids: new Set([100]),
+        options: {
+          branch_reorder_mode: 'branch_no_reorder',
+          switch_mode: 'click_through',
+          click_protection: 'off',
+        },
+      }),
+    );
+
+    const goButton = main.querySelector('.button--go')!;
+
+    expect(goButton.classList.contains('pf-disabled')).toBe(false);
+    expect(goButton.classList.contains('button--disabled')).toBe(false);
+    expect(goButton.classList.contains('pf-confirm')).toBe(false);
   });
 
   it('moves faved storylets before neutral ones', () => {
@@ -192,7 +235,7 @@ describe('parseStorylets', () => {
         options: {
           branch_reorder_mode: 'branch_reorder_active',
           switch_mode: 'click_through',
-          block_action: false,
+          click_protection: 'off',
         },
       }),
       true,

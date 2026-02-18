@@ -84,20 +84,28 @@
 
           <form>
             <label class="option">
-              <input type="radio" value="false" name="block_action" />
+              <input type="radio" value="off" name="click_protection" />
               <span class="option-content">
                 <span class="option-label">Off</span>
               </span>
             </label>
 
             <label class="option">
-              <input type="radio" value="true" name="block_action" />
+              <input type="radio" value="shift" name="click_protection" />
+              <span class="option-content" data-mobile-text="Long press to bypass">
+                <span class="option-label">Hold to bypass</span>
+                <span class="option-hint">Hold Shift to bypass</span>
+              </span>
+            </label>
+
+            <label class="option">
+              <input type="radio" value="confirm" name="click_protection" />
               <span
                 class="option-content"
-                data-mobile-text="Require confirmation. Long press to bypass"
+                data-mobile-text="Tap once to see a warning, tap again to confirm"
               >
-                <span class="option-label">On</span>
-                <span class="option-hint">Require confirmation. Hold Shift to bypass</span>
+                <span class="option-label">Confirmation click</span>
+                <span class="option-hint">Click once to see a warning, click again to confirm</span>
               </span>
             </label>
           </form>

@@ -9,6 +9,8 @@ import {
   type Options,
   type BranchReorderMode,
   type SwitchMode,
+  type ClickProtection,
+  CLICK_PROTECTIONS,
 } from '@/types';
 import { packSet, unpackSet } from './storage';
 
@@ -20,6 +22,16 @@ const VALID_REORDER_MODES: BranchReorderMode[] = [
 const VALID_SWITCH_MODES: SwitchMode[] = ['click_through', 'modifier_click'];
 
 function sanitizeOptions(raw: Record<string, unknown>): Options {
+  let clickProtection: ClickProtection;
+
+  if (CLICK_PROTECTIONS.includes(raw.click_protection as ClickProtection)) {
+    clickProtection = raw.click_protection as ClickProtection;
+  } else if ('block_action' in raw && !('click_protection' in raw)) {
+    clickProtection = raw.block_action === true ? 'shift' : 'off';
+  } else {
+    clickProtection = DEFAULT_OPTIONS.click_protection;
+  }
+
   return {
     branch_reorder_mode: VALID_REORDER_MODES.includes(raw.branch_reorder_mode as BranchReorderMode)
       ? (raw.branch_reorder_mode as BranchReorderMode)
@@ -27,8 +39,7 @@ function sanitizeOptions(raw: Record<string, unknown>): Options {
     switch_mode: VALID_SWITCH_MODES.includes(raw.switch_mode as SwitchMode)
       ? (raw.switch_mode as SwitchMode)
       : DEFAULT_OPTIONS.switch_mode,
-    block_action:
-      typeof raw.block_action === 'boolean' ? raw.block_action : DEFAULT_OPTIONS.block_action,
+    click_protection: clickProtection,
   };
 }
 
@@ -47,8 +58,9 @@ export async function exportData(): Promise<ExportFile> {
     branch_reorder_mode:
       (raw.branch_reorder_mode as BranchReorderMode) ?? DEFAULT_OPTIONS.branch_reorder_mode,
     switch_mode: (raw.switch_mode as SwitchMode) ?? DEFAULT_OPTIONS.switch_mode,
-    block_action:
-      typeof raw.block_action === 'boolean' ? raw.block_action : DEFAULT_OPTIONS.block_action,
+    click_protection: CLICK_PROTECTIONS.includes(raw.click_protection as ClickProtection)
+      ? (raw.click_protection as ClickProtection)
+      : DEFAULT_OPTIONS.click_protection,
   };
 
   return {
@@ -65,7 +77,7 @@ export async function importData(file: ExportFile): Promise<void> {
     storage_schema: STORAGE_SCHEMA_VERSION,
     branch_reorder_mode: file.options.branch_reorder_mode,
     switch_mode: file.options.switch_mode,
-    block_action: file.options.block_action,
+    click_protection: file.options.click_protection,
   };
 
   for (const key of DATA_KEYS) {

@@ -1,5 +1,5 @@
 import type { PublicPath } from 'wxt/browser';
-import type { FaveData, FaveState } from '@/types';
+import type { FaveData, FaveState, ClickProtection } from '@/types';
 import {
   getCurrentState,
   getNextCardState,
@@ -19,33 +19,45 @@ function getCardButtonImageUrl(container: Element, state: FaveState): string {
   return browser.runtime.getURL(path);
 }
 
-function applyBlockAction(container: Element, state: FaveState, blockAction: boolean): void {
+function applyClickProtection(
+  container: Element,
+  state: FaveState,
+  clickProtection: ClickProtection,
+): void {
   const discardButton = queryLast(container, '.card__discard-button');
   const marginButton = queryLast(container, '.button--margin');
   const handCard = queryLast(container, '.hand__card');
   const buttonletContainer = queryLast(container, '.buttonlet-container');
 
-  const disableDiscard = state === 'fave' && blockAction;
-  const disableMargin = (state === 'avoid' && blockAction) || (state === 'fave' && !blockAction);
-  const disableHand = state === 'avoid' && blockAction;
-  const disableDelete = (state === 'avoid' && !blockAction) || (state === 'fave' && blockAction);
+  const isShift = clickProtection === 'shift';
+  const isConfirm = clickProtection === 'confirm';
+  const isProtected = isShift || isConfirm;
+
+  const disableDiscard = state === 'fave' && isProtected;
+  const disableMargin = (state === 'avoid' && isProtected) || (state === 'fave' && !isProtected);
+  const disableHand = state === 'avoid' && isProtected;
+  const disableDelete = (state === 'avoid' && !isProtected) || (state === 'fave' && isProtected);
 
   if (discardButton) {
-    discardButton.classList.toggle('pf-disabled', disableDiscard);
-    discardButton.classList.toggle('button--disabled', disableDiscard);
+    discardButton.classList.toggle('pf-disabled', disableDiscard && isShift);
+    discardButton.classList.toggle('button--disabled', disableDiscard && isShift);
+    discardButton.classList.toggle('pf-confirm', disableDiscard && isConfirm);
   }
 
   if (marginButton) {
-    marginButton.classList.toggle('pf-disabled', disableMargin);
+    marginButton.classList.toggle('pf-disabled', disableMargin && isShift);
+    marginButton.classList.toggle('pf-confirm', disableMargin && isConfirm);
   }
 
   if (handCard) {
-    handCard.classList.toggle('pf-disabled', disableHand);
+    handCard.classList.toggle('pf-disabled', disableHand && isShift);
+    handCard.classList.toggle('pf-confirm', disableHand && isConfirm);
   }
 
   if (buttonletContainer) {
-    buttonletContainer.classList.toggle('pf-disabled', disableDelete);
-    buttonletContainer.classList.toggle('button--disabled', disableDelete);
+    buttonletContainer.classList.toggle('pf-disabled', disableDelete && isShift);
+    buttonletContainer.classList.toggle('button--disabled', disableDelete && isShift);
+    buttonletContainer.classList.toggle('pf-confirm', disableDelete && isConfirm);
   }
 }
 
@@ -179,7 +191,7 @@ export function parseCards(faveData: FaveData): void {
     const state = getCurrentState(cardId, faveData.card_faves, faveData.card_avoids);
 
     applyCardStyling(card, state);
-    applyBlockAction(card, state, faveData.options.block_action);
+    applyClickProtection(card, state, faveData.options.click_protection);
 
     const imageUrl = getCardButtonImageUrl(card, state);
 

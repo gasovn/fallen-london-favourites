@@ -126,6 +126,29 @@ export async function migrate(storage: Browser.storage.StorageArea): Promise<voi
       }
       // If card_discards_keys doesn't exist, don't touch card_avoids
 
+      updates.storage_schema = 3;
+      await storage.set(updates);
+
+      if (keysToRemove.length > 0) {
+        await storage.remove(keysToRemove);
+      }
+
+      return migrate(storage);
+    }
+
+    case 3: {
+      // v3 -> v4: Convert block_action boolean to click_protection enum
+      const updates: Record<string, unknown> = {};
+      const keysToRemove: string[] = [];
+
+      if (data.block_action === true) {
+        updates.click_protection = 'shift';
+      } else {
+        updates.click_protection = 'off';
+      }
+
+      keysToRemove.push('block_action');
+
       updates.storage_schema = STORAGE_SCHEMA_VERSION;
       await storage.set(updates);
 

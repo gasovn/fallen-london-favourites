@@ -35,7 +35,7 @@ function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
     options: {
       branch_reorder_mode: 'branch_no_reorder',
       switch_mode: 'click_through',
-      block_action: false,
+      click_protection: 'off',
     },
     ...overrides,
   };
@@ -152,7 +152,7 @@ describe('parseCards', () => {
     expect(toggles.length).toBe(2);
   });
 
-  it('fave + blockAction disables discard and buttonlet', () => {
+  it('fave + shift protection disables discard and buttonlet', () => {
     main.appendChild(createHandCard(100));
 
     parseCards(
@@ -161,7 +161,7 @@ describe('parseCards', () => {
         options: {
           branch_reorder_mode: 'branch_no_reorder',
           switch_mode: 'click_through',
-          block_action: true,
+          click_protection: 'shift',
         },
       }),
     );
@@ -178,7 +178,7 @@ describe('parseCards', () => {
     expect(card.querySelector('.hand__card')!.classList.contains('pf-disabled')).toBe(false);
   });
 
-  it('avoid + blockAction disables margin and hand card', () => {
+  it('avoid + shift protection disables margin and hand card', () => {
     main.appendChild(createHandCard(100));
 
     parseCards(
@@ -187,7 +187,7 @@ describe('parseCards', () => {
         options: {
           branch_reorder_mode: 'branch_no_reorder',
           switch_mode: 'click_through',
-          block_action: true,
+          click_protection: 'shift',
         },
       }),
     );
@@ -202,6 +202,78 @@ describe('parseCards', () => {
     expect(card.querySelector('.buttonlet-container')!.classList.contains('pf-disabled')).toBe(
       false,
     );
+  });
+
+  it('fave + confirm protection adds pf-confirm without pf-disabled', () => {
+    main.appendChild(createHandCard(100));
+
+    parseCards(
+      makeFaveData({
+        card_faves: new Set([100]),
+        options: {
+          branch_reorder_mode: 'branch_no_reorder',
+          switch_mode: 'click_through',
+          click_protection: 'confirm',
+        },
+      }),
+    );
+
+    const card = main.querySelector('.hand__card-container')!;
+
+    expect(card.querySelector('.card__discard-button')!.classList.contains('pf-confirm')).toBe(
+      true,
+    );
+    expect(card.querySelector('.buttonlet-container')!.classList.contains('pf-confirm')).toBe(true);
+    expect(card.querySelector('.card__discard-button')!.classList.contains('pf-disabled')).toBe(
+      false,
+    );
+    expect(card.querySelector('.buttonlet-container')!.classList.contains('pf-disabled')).toBe(
+      false,
+    );
+  });
+
+  it('avoid + confirm protection adds pf-confirm to margin and hand card', () => {
+    main.appendChild(createHandCard(100));
+
+    parseCards(
+      makeFaveData({
+        card_avoids: new Set([100]),
+        options: {
+          branch_reorder_mode: 'branch_no_reorder',
+          switch_mode: 'click_through',
+          click_protection: 'confirm',
+        },
+      }),
+    );
+
+    const card = main.querySelector('.hand__card-container')!;
+
+    expect(card.querySelector('.button--margin')!.classList.contains('pf-confirm')).toBe(true);
+    expect(card.querySelector('.hand__card')!.classList.contains('pf-confirm')).toBe(true);
+    expect(card.querySelector('.button--margin')!.classList.contains('pf-disabled')).toBe(false);
+    expect(card.querySelector('.hand__card')!.classList.contains('pf-disabled')).toBe(false);
+  });
+
+  it('click_protection "off" does not add protection classes', () => {
+    main.appendChild(createHandCard(100));
+
+    parseCards(
+      makeFaveData({
+        card_avoids: new Set([100]),
+        options: {
+          branch_reorder_mode: 'branch_no_reorder',
+          switch_mode: 'click_through',
+          click_protection: 'off',
+        },
+      }),
+    );
+
+    const card = main.querySelector('.hand__card-container')!;
+
+    expect(card.querySelector('.button--margin')!.classList.contains('pf-disabled')).toBe(false);
+    expect(card.querySelector('.hand__card')!.classList.contains('pf-disabled')).toBe(false);
+    expect(card.querySelector('.button--margin')!.classList.contains('pf-confirm')).toBe(false);
+    expect(card.querySelector('.hand__card')!.classList.contains('pf-confirm')).toBe(false);
   });
 
   it('skips hidden cards', () => {

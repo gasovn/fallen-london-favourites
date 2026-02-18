@@ -1,4 +1,4 @@
-import type { FaveData } from '@/types';
+import { type FaveData, CLICK_PROTECTIONS } from '@/types';
 import { getOptions, unpackSet } from '@/lib/storage';
 import { parseStorylets, shiftHandler } from '@/lib/storylets';
 import { parseCards } from '@/lib/cards';
@@ -22,7 +22,7 @@ export default defineContentScript({
       options: {
         branch_reorder_mode: 'branch_reorder_active',
         switch_mode: 'click_through',
-        block_action: false,
+        click_protection: 'off',
       },
     };
 
@@ -59,7 +59,13 @@ export default defineContentScript({
             (data.branch_reorder_mode as FaveData['options']['branch_reorder_mode']) ??
             'branch_reorder_active',
           switch_mode: (data.switch_mode as FaveData['options']['switch_mode']) ?? 'click_through',
-          block_action: data.block_action === true,
+          click_protection:
+            typeof data.click_protection === 'string' &&
+            CLICK_PROTECTIONS.includes(
+              data.click_protection as FaveData['options']['click_protection'],
+            )
+              ? (data.click_protection as FaveData['options']['click_protection'])
+              : 'off',
         },
       };
     }
@@ -150,7 +156,7 @@ export default defineContentScript({
     }
 
     function protectAvoids(e: MouseEvent): void {
-      if (e.metaKey || e.ctrlKey) {
+      if (faveData.options.click_protection !== 'confirm') {
         return;
       }
 

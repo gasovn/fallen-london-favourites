@@ -1,4 +1,4 @@
-export const STORAGE_SCHEMA_VERSION = 3;
+export const STORAGE_SCHEMA_VERSION = 4;
 export const MAX_PACK_ITEMS_PER_KEY = 512;
 
 export type BranchReorderMode =
@@ -6,19 +6,21 @@ export type BranchReorderMode =
   | 'branch_reorder_active'
   | 'branch_reorder_all';
 export type SwitchMode = 'click_through' | 'modifier_click';
+export const CLICK_PROTECTIONS = ['off', 'shift', 'confirm'] as const;
+export type ClickProtection = (typeof CLICK_PROTECTIONS)[number];
 
 export type FaveState = 'fave' | 'avoid' | 'none';
 
 export interface Options {
   branch_reorder_mode: BranchReorderMode;
   switch_mode: SwitchMode;
-  block_action: boolean;
+  click_protection: ClickProtection;
 }
 
 export interface DefaultStorageOptions {
   branch_reorder_mode: BranchReorderMode;
   switch_mode: SwitchMode;
-  block_action: boolean;
+  click_protection: ClickProtection;
   branch_faves_keys: string[];
   branch_avoids_keys: string[];
   storylet_faves_keys: string[];
@@ -31,7 +33,7 @@ export interface DefaultStorageOptions {
 export const DEFAULT_OPTIONS: DefaultStorageOptions = {
   branch_reorder_mode: 'branch_reorder_active',
   switch_mode: 'click_through',
-  block_action: false,
+  click_protection: 'off',
   branch_faves_keys: [],
   branch_avoids_keys: [],
   storylet_faves_keys: [],
@@ -52,7 +54,7 @@ export interface FaveData {
 }
 
 export const EXPORT_FORMAT = 'fallen-london-favourites' as const;
-export const EXPORT_VERSION = 1;
+export const EXPORT_VERSION = 2;
 
 export const DATA_KEYS = [
   'branch_faves',

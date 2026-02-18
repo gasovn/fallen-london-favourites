@@ -5,20 +5,21 @@ import { createMockStorage, stubBrowserGlobal } from './helpers/mock-storage';
 import storageV0 from './fixtures/storage-v0.json';
 import storageV1 from './fixtures/storage-v1.json';
 import storageV2 from './fixtures/storage-v2.json';
+import storageV3 from './fixtures/storage-v3.json';
 import storageLegacy from './fixtures/storage-legacy.json';
 import storageV2Real from './fixtures/storage-v2-real.json';
 
 stubBrowserGlobal();
 
 describe('snapshot: v0 fixture migration', () => {
-  it('migrates v0 -> v3 preserving all branch IDs', async () => {
+  it('migrates v0 -> v4 preserving all branch IDs', async () => {
     const storage = createMockStorage(storageV0 as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(3);
+    expect(result.storage_schema).toBe(4);
 
     // branch_faves from v0 "branch_faves" array should be packed
     const branchFaves = unpackSet(result, 'branch_faves');
@@ -28,7 +29,8 @@ describe('snapshot: v0 fixture migration', () => {
     // Options preserved
     expect(result.branch_reorder_mode).toBe('branch_reorder_active');
 
-    // block_action was never stored — runtime getOption() provides default
+    // block_action was never stored, so click_protection defaults to 'off'
+    expect(result.click_protection).toBe('off');
     expect(result.block_action).toBeUndefined();
 
     // Empty card sets created (from card_protects_keys/card_discards_keys = [])
@@ -38,14 +40,14 @@ describe('snapshot: v0 fixture migration', () => {
 });
 
 describe('snapshot: v1 fixture migration', () => {
-  it('migrates v1 -> v3 preserving all data and renaming card keys', async () => {
+  it('migrates v1 -> v4 preserving all data and renaming card keys', async () => {
     const storage = createMockStorage(storageV1 as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(3);
+    expect(result.storage_schema).toBe(4);
 
     // All arrays migrated to packed sets
     const branchFaves = unpackSet(result, 'branch_faves');
@@ -76,18 +78,18 @@ describe('snapshot: v1 fixture migration', () => {
 });
 
 describe('snapshot: v2 fixture migration', () => {
-  it('migrates v2 -> v3 with all transformations', async () => {
+  it('migrates v2 -> v4 with all transformations', async () => {
     const storage = createMockStorage(storageV2 as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(3);
+    expect(result.storage_schema).toBe(4);
 
-    // block_action: string "true" -> boolean true
-    expect(result.block_action).toBe(true);
-    expect(typeof result.block_action).toBe('boolean');
+    // block_action: string "true" -> click_protection: 'shift'
+    expect(result.click_protection).toBe('shift');
+    expect(result.block_action).toBeUndefined();
 
     // Branch data unchanged
     const branchFaves = unpackSet(result, 'branch_faves');
@@ -174,19 +176,74 @@ describe('snapshot: v2 fixture migration', () => {
   });
 });
 
+describe('snapshot: v3 fixture migration', () => {
+  it('migrates v3 -> v4 converting block_action to click_protection', async () => {
+    const storage = createMockStorage(storageV3 as Record<string, unknown>);
+
+    await migrate(storage as unknown as Browser.storage.StorageArea);
+
+    const result = storage._getData();
+
+    expect(result.storage_schema).toBe(4);
+
+    // block_action: true -> click_protection: 'shift'
+    expect(result.click_protection).toBe('shift');
+    expect(result.block_action).toBeUndefined();
+
+    // All set data preserved
+    const branchFaves = unpackSet(result, 'branch_faves');
+
+    expect(branchFaves).toEqual(new Set([10245, 20310, 30412, 40587, 50691]));
+
+    const branchAvoids = unpackSet(result, 'branch_avoids');
+
+    expect(branchAvoids).toEqual(new Set([11111, 22222, 33333]));
+
+    const storyletFaves = unpackSet(result, 'storylet_faves');
+
+    expect(storyletFaves).toEqual(new Set([60123, 70456, 80789]));
+
+    const cardFaves = unpackSet(result, 'card_faves');
+
+    expect(cardFaves).toEqual(new Set([90101, 90202, 90303, 90404, 90505]));
+
+    const cardAvoids = unpackSet(result, 'card_avoids');
+
+    expect(cardAvoids).toEqual(new Set([91601, 91702, 91803]));
+
+    // Options preserved
+    expect(result.branch_reorder_mode).toBe('branch_reorder_all');
+    expect(result.switch_mode).toBe('modifier_click');
+  });
+
+  it('migration is idempotent', async () => {
+    const storage = createMockStorage(storageV3 as Record<string, unknown>);
+
+    await migrate(storage as unknown as Browser.storage.StorageArea);
+
+    const afterFirst = { ...storage._getData() };
+
+    await migrate(storage as unknown as Browser.storage.StorageArea);
+
+    const afterSecond = storage._getData();
+
+    expect(afterSecond).toEqual(afterFirst);
+  });
+});
+
 describe('snapshot: legacy fixture migration', () => {
-  it('migrates legacy -> v3 preserving all data', async () => {
+  it('migrates legacy -> v4 preserving all data', async () => {
     const storage = createMockStorage(storageLegacy as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(3);
+    expect(result.storage_schema).toBe(4);
 
-    // block_action converted from string to boolean
-    expect(result.block_action).toBe(true);
-    expect(typeof result.block_action).toBe('boolean');
+    // block_action converted from string "true" -> click_protection "shift"
+    expect(result.click_protection).toBe('shift');
+    expect(result.block_action).toBeUndefined();
 
     // All set data preserved
     const branchFaves = unpackSet(result, 'branch_faves');
@@ -291,16 +348,16 @@ describe('snapshot: real v2 data from browser', () => {
     expect(typeof realData.block_action).toBe('string');
   });
 
-  it('migrates to v3 without errors', async () => {
+  it('migrates to v4 without errors', async () => {
     const storage = createMockStorage(realData);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(3);
-    expect(result.block_action).toBe(true);
-    expect(typeof result.block_action).toBe('boolean');
+    expect(result.storage_schema).toBe(4);
+    expect(result.click_protection).toBe('shift');
+    expect(result.block_action).toBeUndefined();
   });
 
   it('preserves all data through migration', async () => {

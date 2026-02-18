@@ -36,7 +36,7 @@ function validExport(overrides: Record<string, unknown> = {}): ExportFile {
     options: {
       branch_reorder_mode: 'branch_reorder_active',
       switch_mode: 'click_through',
-      block_action: false,
+      click_protection: 'off',
     },
     ...overrides,
   };
@@ -63,7 +63,7 @@ describe('validateImport', () => {
         expect(result.data.options).toEqual({
           branch_reorder_mode: 'branch_reorder_active',
           switch_mode: 'click_through',
-          block_action: false,
+          click_protection: 'off',
         });
       }
     });
@@ -138,6 +138,12 @@ describe('validateImport', () => {
       if (!result.valid) {
         expect(result.error).toBe('Invalid file format');
       }
+    });
+
+    it('accepts old v1 format', () => {
+      const result = validateImport(validExport({ version: 1 }));
+
+      expect(result.valid).toBe(true);
     });
   });
 
@@ -219,7 +225,7 @@ describe('validateImport', () => {
           options: {
             branch_reorder_mode: 'invalid_mode',
             switch_mode: 'invalid_switch',
-            block_action: 'not_a_boolean',
+            click_protection: 'invalid_value',
           },
         }),
       );
@@ -230,7 +236,7 @@ describe('validateImport', () => {
         expect(result.data.options).toEqual({
           branch_reorder_mode: DEFAULT_OPTIONS.branch_reorder_mode,
           switch_mode: DEFAULT_OPTIONS.switch_mode,
-          block_action: DEFAULT_OPTIONS.block_action,
+          click_protection: DEFAULT_OPTIONS.click_protection,
         });
       }
     });
@@ -248,8 +254,46 @@ describe('validateImport', () => {
         expect(result.data.options).toEqual({
           branch_reorder_mode: DEFAULT_OPTIONS.branch_reorder_mode,
           switch_mode: DEFAULT_OPTIONS.switch_mode,
-          block_action: DEFAULT_OPTIONS.block_action,
+          click_protection: DEFAULT_OPTIONS.click_protection,
         });
+      }
+    });
+
+    it('converts old v1 format with block_action to click_protection', () => {
+      const result = validateImport(
+        validExport({
+          version: 1,
+          options: {
+            branch_reorder_mode: 'branch_reorder_active',
+            switch_mode: 'click_through',
+            block_action: true,
+          },
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+
+      if (result.valid) {
+        expect(result.data.options.click_protection).toBe('shift');
+      }
+    });
+
+    it('converts old v1 format with block_action false to "off"', () => {
+      const result = validateImport(
+        validExport({
+          version: 1,
+          options: {
+            branch_reorder_mode: 'branch_reorder_active',
+            switch_mode: 'click_through',
+            block_action: false,
+          },
+        }),
+      );
+
+      expect(result.valid).toBe(true);
+
+      if (result.valid) {
+        expect(result.data.options.click_protection).toBe('off');
       }
     });
   });
@@ -262,10 +306,10 @@ describe('exportData', () => {
 
   it('exports storage data as a clean ExportFile', async () => {
     const storageData: Record<string, unknown> = {
-      storage_schema: 3,
+      storage_schema: 4,
       branch_reorder_mode: 'branch_reorder_all',
       switch_mode: 'modifier_click',
-      block_action: true,
+      click_protection: 'shift',
       ...packSet(new Set([101, 202]), 'branch_faves'),
       ...packSet(new Set([301]), 'branch_avoids'),
       ...packSet(new Set([10, 20]), 'storylet_faves'),
@@ -279,7 +323,7 @@ describe('exportData', () => {
     const result = await exportData();
 
     expect(result.format).toBe('fallen-london-favourites');
-    expect(result.version).toBe(1);
+    expect(result.version).toBe(2);
     expect(typeof result.exported_at).toBe('string');
     expect(result.data).toEqual({
       branch_faves: [101, 202],
@@ -292,13 +336,13 @@ describe('exportData', () => {
     expect(result.options).toEqual({
       branch_reorder_mode: 'branch_reorder_all',
       switch_mode: 'modifier_click',
-      block_action: true,
+      click_protection: 'shift',
     });
   });
 
   it('uses default options when storage has none', async () => {
     const storageData: Record<string, unknown> = {
-      storage_schema: 3,
+      storage_schema: 4,
       branch_faves_keys: [],
       branch_avoids_keys: [],
       storylet_faves_keys: [],
@@ -314,13 +358,13 @@ describe('exportData', () => {
     expect(result.options).toEqual({
       branch_reorder_mode: 'branch_reorder_active',
       switch_mode: 'click_through',
-      block_action: false,
+      click_protection: 'off',
     });
   });
 
   it('produces output that passes validateImport', async () => {
     const storageData: Record<string, unknown> = {
-      storage_schema: 3,
+      storage_schema: 4,
       ...packSet(new Set([42]), 'branch_faves'),
       branch_avoids_keys: [],
       storylet_faves_keys: [],
@@ -356,7 +400,7 @@ describe('importData', () => {
     expect(written.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
     expect(written.branch_reorder_mode).toBe('branch_reorder_active');
     expect(written.switch_mode).toBe('click_through');
-    expect(written.block_action).toBe(false);
+    expect(written.click_protection).toBe('off');
 
     const branchFaves = unpackSet(written, 'branch_faves');
 

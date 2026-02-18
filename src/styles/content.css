@@ -19,6 +19,10 @@
   filter: grayscale(100%);
 }
 
+#main .pf-confirm {
+  filter: grayscale(100%);
+}
+
 #main .pf-disabled.shift-pressed {
   pointer-events: auto;
   cursor: pointer;

@@ -1,4 +1,4 @@
-import type { FaveData, FaveState } from '@/types';
+import type { FaveData, FaveState, ClickProtection } from '@/types';
 import type { PublicPath } from 'wxt/browser';
 import {
   getCurrentState,
@@ -36,24 +36,25 @@ function getToggleImageUrl(state: FaveState): string {
   return browser.runtime.getURL(path);
 }
 
-function applyElementStyling(element: HTMLElement, state: FaveState, blockAction: boolean): void {
+function applyElementStyling(
+  element: HTMLElement,
+  state: FaveState,
+  clickProtection: ClickProtection,
+): void {
   element.classList.toggle('storylet_favourite', state === 'fave');
   element.classList.toggle('storylet_avoid', state === 'avoid');
 
-  // Only avoided items get disabled, and only when block_action is enabled
   const goButton = queryLast(element, '.button--go');
 
   if (!goButton) {
     return;
   }
 
-  if (state === 'avoid' && blockAction) {
-    goButton.classList.add('pf-disabled');
-    goButton.classList.add('button--disabled');
-  } else {
-    goButton.classList.remove('pf-disabled');
-    goButton.classList.remove('button--disabled');
-  }
+  const isAvoid = state === 'avoid';
+
+  goButton.classList.toggle('pf-disabled', isAvoid && clickProtection === 'shift');
+  goButton.classList.toggle('button--disabled', isAvoid && clickProtection === 'shift');
+  goButton.classList.toggle('pf-confirm', isAvoid && clickProtection === 'confirm');
 }
 
 function createToggleButton(id: number, state: FaveState, isLocked: boolean): HTMLInputElement {
@@ -166,7 +167,7 @@ function processElements(
 
     insertAfterButton.after(toggleButton);
 
-    applyElementStyling(el, state, faveData.options.block_action);
+    applyElementStyling(el, state, faveData.options.click_protection);
   });
 }
 

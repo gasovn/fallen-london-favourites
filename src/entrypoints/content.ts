@@ -1,7 +1,8 @@
-import { type FaveData, CLICK_PROTECTIONS } from '@/types';
-import { getOptions, unpackSet } from '@/lib/storage';
+import type { FaveData } from '@/types';
+import { getOptions, unpackSet, parseClickProtection } from '@/lib/storage';
 import { parseStorylets, shiftHandler } from '@/lib/storylets';
 import { parseCards } from '@/lib/cards';
+import { protectAvoidClick } from '@/lib/protection';
 import { isMobile, LONG_PRESS_MS, MOVE_THRESHOLD, PROTECT_INTERVAL_MS } from '@/lib/platform';
 import '@/styles/content.css';
 
@@ -59,13 +60,7 @@ export default defineContentScript({
             (data.branch_reorder_mode as FaveData['options']['branch_reorder_mode']) ??
             'branch_reorder_active',
           switch_mode: (data.switch_mode as FaveData['options']['switch_mode']) ?? 'click_through',
-          click_protection:
-            typeof data.click_protection === 'string' &&
-            CLICK_PROTECTIONS.includes(
-              data.click_protection as FaveData['options']['click_protection'],
-            )
-              ? (data.click_protection as FaveData['options']['click_protection'])
-              : 'off',
+          click_protection: parseClickProtection(data.click_protection),
         },
       };
     }
@@ -156,45 +151,7 @@ export default defineContentScript({
     }
 
     function protectAvoids(e: MouseEvent): void {
-      if (faveData.options.click_protection !== 'confirm') {
-        return;
-      }
-
-      const target = e.target as HTMLElement;
-
-      if (!target) {
-        return;
-      }
-
-      const button = target.closest<HTMLElement>(
-        '.storylet_avoid .button--go, .button_avoid, .card_avoid .hand__card, .card_avoid .button--margin',
-      );
-
-      if (!button) {
-        return;
-      }
-
-      const now = Date.now();
-      const lastTimestamp = parseInt(button.dataset.protectTimestamp ?? '0', 10);
-
-      if (!button.dataset.protectTimestamp || now - lastTimestamp >= PROTECT_INTERVAL_MS) {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-
-        const confirmText = document.createElement('span');
-
-        confirmText.className = 'protect-confirm';
-        confirmText.textContent = 'SURE?';
-        button.appendChild(confirmText);
-        button.classList.add('button-protected');
-
-        ctx.setTimeout(() => {
-          button.classList.remove('button-protected');
-          confirmText.remove();
-        }, PROTECT_INTERVAL_MS);
-
-        button.dataset.protectTimestamp = String(now);
-      }
+      protectAvoidClick(e, faveData.options.click_protection, (fn, ms) => ctx.setTimeout(fn, ms));
     }
 
     async function onStorageChange(

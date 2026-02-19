@@ -9,10 +9,8 @@ import {
   type Options,
   type BranchReorderMode,
   type SwitchMode,
-  type ClickProtection,
-  CLICK_PROTECTIONS,
 } from '@/types';
-import { packSet, unpackSet } from './storage';
+import { packSet, unpackSet, parseClickProtection } from './storage';
 
 const VALID_REORDER_MODES: BranchReorderMode[] = [
   'branch_no_reorder',
@@ -22,14 +20,10 @@ const VALID_REORDER_MODES: BranchReorderMode[] = [
 const VALID_SWITCH_MODES: SwitchMode[] = ['click_through', 'modifier_click'];
 
 function sanitizeOptions(raw: Record<string, unknown>): Options {
-  let clickProtection: ClickProtection;
+  let clickProtection = parseClickProtection(raw.click_protection);
 
-  if (CLICK_PROTECTIONS.includes(raw.click_protection as ClickProtection)) {
-    clickProtection = raw.click_protection as ClickProtection;
-  } else if ('block_action' in raw && !('click_protection' in raw)) {
+  if (clickProtection === 'off' && 'block_action' in raw && !('click_protection' in raw)) {
     clickProtection = raw.block_action === true ? 'shift' : 'off';
-  } else {
-    clickProtection = DEFAULT_OPTIONS.click_protection;
   }
 
   return {
@@ -58,9 +52,7 @@ export async function exportData(): Promise<ExportFile> {
     branch_reorder_mode:
       (raw.branch_reorder_mode as BranchReorderMode) ?? DEFAULT_OPTIONS.branch_reorder_mode,
     switch_mode: (raw.switch_mode as SwitchMode) ?? DEFAULT_OPTIONS.switch_mode,
-    click_protection: CLICK_PROTECTIONS.includes(raw.click_protection as ClickProtection)
-      ? (raw.click_protection as ClickProtection)
-      : DEFAULT_OPTIONS.click_protection,
+    click_protection: parseClickProtection(raw.click_protection),
   };
 
   return {

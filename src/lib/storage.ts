@@ -1,4 +1,16 @@
-import { MAX_PACK_ITEMS_PER_KEY, DEFAULT_OPTIONS, type DefaultStorageOptions } from '@/types';
+import {
+  MAX_PACK_ITEMS_PER_KEY,
+  DEFAULT_OPTIONS,
+  CLICK_PROTECTIONS,
+  type DefaultStorageOptions,
+  type ClickProtection,
+} from '@/types';
+
+export function parseClickProtection(value: unknown): ClickProtection {
+  return typeof value === 'string' && CLICK_PROTECTIONS.includes(value as ClickProtection)
+    ? (value as ClickProtection)
+    : 'off';
+}
 
 export function packSet(set: Set<number>, storageKey: string): Record<string, unknown> {
   const source = Array.from(set).sort((a, b) => a - b);

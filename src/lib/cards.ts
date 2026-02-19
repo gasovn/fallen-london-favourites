@@ -31,33 +31,32 @@ function applyClickProtection(
 
   const isShift = clickProtection === 'shift';
   const isConfirm = clickProtection === 'confirm';
-  const isProtected = isShift || isConfirm;
 
-  const disableDiscard = state === 'fave' && isProtected;
-  const disableMargin = (state === 'avoid' && isProtected) || (state === 'fave' && !isProtected);
-  const disableHand = state === 'avoid' && isProtected;
-  const disableDelete = (state === 'avoid' && !isProtected) || (state === 'fave' && isProtected);
+  // Faved cards: shield discard/delete buttons (prevent removing)
+  const shieldFave = state === 'fave';
+  // Avoided cards: shield margin/hand card (prevent playing)
+  const shieldAvoid = state === 'avoid';
 
   if (discardButton) {
-    discardButton.classList.toggle('pf-disabled', disableDiscard && isShift);
-    discardButton.classList.toggle('button--disabled', disableDiscard && isShift);
-    discardButton.classList.toggle('pf-confirm', disableDiscard && isConfirm);
+    discardButton.classList.toggle('pf-disabled', shieldFave && isShift);
+    discardButton.classList.toggle('button--disabled', shieldFave && isShift);
+    discardButton.classList.toggle('pf-confirm', shieldFave && isConfirm);
   }
 
   if (marginButton) {
-    marginButton.classList.toggle('pf-disabled', disableMargin && isShift);
-    marginButton.classList.toggle('pf-confirm', disableMargin && isConfirm);
+    marginButton.classList.toggle('pf-disabled', shieldAvoid && isShift);
+    marginButton.classList.toggle('pf-confirm', shieldAvoid && isConfirm);
   }
 
   if (handCard) {
-    handCard.classList.toggle('pf-disabled', disableHand && isShift);
-    handCard.classList.toggle('pf-confirm', disableHand && isConfirm);
+    handCard.classList.toggle('pf-disabled', shieldAvoid && isShift);
+    handCard.classList.toggle('pf-confirm', shieldAvoid && isConfirm);
   }
 
   if (buttonletContainer) {
-    buttonletContainer.classList.toggle('pf-disabled', disableDelete && isShift);
-    buttonletContainer.classList.toggle('button--disabled', disableDelete && isShift);
-    buttonletContainer.classList.toggle('pf-confirm', disableDelete && isConfirm);
+    buttonletContainer.classList.toggle('pf-disabled', shieldFave && isShift);
+    buttonletContainer.classList.toggle('button--disabled', shieldFave && isShift);
+    buttonletContainer.classList.toggle('pf-confirm', shieldFave && isConfirm);
   }
 }
 

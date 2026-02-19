@@ -11,6 +11,7 @@ import {
   type SwitchMode,
 } from '@/types';
 import { packSet, unpackSet, parseClickProtection } from './storage';
+import { migrateData, detectVersion } from './migration';
 
 const VALID_REORDER_MODES: BranchReorderMode[] = [
   'branch_no_reorder',
@@ -34,6 +35,28 @@ function sanitizeOptions(raw: Record<string, unknown>): Options {
       ? (raw.switch_mode as SwitchMode)
       : DEFAULT_OPTIONS.switch_mode,
     click_protection: clickProtection,
+  };
+}
+
+export function convertRawDump(raw: Record<string, unknown>): ExportFile {
+  const migrated = migrateData(raw);
+
+  const data = Object.fromEntries(
+    DATA_KEYS.map((key) => {
+      const set = unpackSet(migrated, key);
+
+      return [key, Array.from(set).sort((a, b) => a - b)];
+    }),
+  ) as unknown as ExportFile['data'];
+
+  const options = sanitizeOptions(migrated);
+
+  return {
+    format: EXPORT_FORMAT,
+    version: EXPORT_VERSION,
+    exported_at: new Date().toISOString(),
+    data,
+    options,
   };
 }
 
@@ -87,55 +110,75 @@ export function validateImport(raw: unknown): ImportResult {
 
   const obj = raw as Record<string, unknown>;
 
-  if (obj.format !== EXPORT_FORMAT) {
-    return { valid: false, error: 'Not a Fallen London Favourites export file' };
-  }
+  // Native ExportFile format — existing validation path
+  if (obj.format === EXPORT_FORMAT) {
+    if (typeof obj.version !== 'number') {
+      return { valid: false, error: 'Invalid file format' };
+    }
 
-  if (typeof obj.version !== 'number') {
-    return { valid: false, error: 'Invalid file format' };
-  }
+    if (obj.version > EXPORT_VERSION) {
+      return {
+        valid: false,
+        error: 'This file was created by a newer version. Please update the extension',
+      };
+    }
 
-  if (obj.version > EXPORT_VERSION) {
+    if (obj.data === null || typeof obj.data !== 'object') {
+      return { valid: false, error: 'File data is corrupted' };
+    }
+
+    const data = obj.data as Record<string, unknown>;
+
+    for (const key of DATA_KEYS) {
+      const arr = data[key];
+
+      if (!Array.isArray(arr)) {
+        return { valid: false, error: 'File data is corrupted' };
+      }
+
+      if (!arr.every((v) => typeof v === 'number')) {
+        return { valid: false, error: 'File data is corrupted' };
+      }
+    }
+
+    const options = sanitizeOptions(
+      typeof obj.options === 'object' && obj.options !== null
+        ? (obj.options as Record<string, unknown>)
+        : {},
+    );
+
     return {
-      valid: false,
-      error: 'This file was created by a newer version. Please update the extension',
+      valid: true,
+      data: {
+        format: EXPORT_FORMAT,
+        version: obj.version,
+        exported_at: typeof obj.exported_at === 'string' ? obj.exported_at : '',
+        data: Object.fromEntries(
+          DATA_KEYS.map((k) => [k, data[k] as number[]]),
+        ) as unknown as ExportFile['data'],
+        options,
+      },
     };
   }
 
-  if (obj.data === null || typeof obj.data !== 'object') {
-    return { valid: false, error: 'File data is corrupted' };
+  // Wrong format marker — not our file
+  if ('format' in obj) {
+    return { valid: false, error: 'Not a Fallen London Favourites export file' };
   }
 
-  const data = obj.data as Record<string, unknown>;
+  // No format field — try as raw storage dump
+  const version = detectVersion(obj);
 
-  for (const key of DATA_KEYS) {
-    const arr = data[key];
-
-    if (!Array.isArray(arr)) {
-      return { valid: false, error: 'File data is corrupted' };
-    }
-
-    if (!arr.every((v) => typeof v === 'number')) {
-      return { valid: false, error: 'File data is corrupted' };
-    }
+  if (version >= STORAGE_SCHEMA_VERSION) {
+    // detectVersion returns STORAGE_SCHEMA_VERSION for empty/unrecognized data
+    return { valid: false, error: 'Unrecognized file format' };
   }
 
-  const options = sanitizeOptions(
-    typeof obj.options === 'object' && obj.options !== null
-      ? (obj.options as Record<string, unknown>)
-      : {},
-  );
+  try {
+    const converted = convertRawDump(obj);
 
-  return {
-    valid: true,
-    data: {
-      format: EXPORT_FORMAT,
-      version: obj.version,
-      exported_at: typeof obj.exported_at === 'string' ? obj.exported_at : '',
-      data: Object.fromEntries(
-        DATA_KEYS.map((k) => [k, data[k] as number[]]),
-      ) as unknown as ExportFile['data'],
-      options,
-    },
-  };
+    return { valid: true, data: converted };
+  } catch {
+    return { valid: false, error: 'Unrecognized file format' };
+  }
 }

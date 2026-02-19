@@ -31,26 +31,29 @@ export function detectVersion(raw: Record<string, unknown>): number {
   return STORAGE_SCHEMA_VERSION;
 }
 
-export async function migrate(storage: Browser.storage.StorageArea): Promise<void> {
-  const data = (await storage.get(null)) as Record<string, unknown>;
+/**
+ * Pure, synchronous migration of raw storage data to the current schema.
+ * Takes a plain object, returns a new plain object at STORAGE_SCHEMA_VERSION.
+ * Does NOT mutate the input — each step works on a shallow copy.
+ * Throws on unknown versions (caller is responsible for error handling).
+ */
+export function migrateData(data: Record<string, unknown>): Record<string, unknown> {
   const version = detectVersion(data);
 
   if (version === STORAGE_SCHEMA_VERSION) {
-    return;
+    return data;
   }
 
   switch (version) {
     case 0: {
       // v0 -> v1: Rename saved array in storage
-      const updates: Record<string, unknown> = { storage_schema: 1 };
+      const next: Record<string, unknown> = { ...data, storage_schema: 1 };
 
       if (data.branch_faves) {
-        updates.branch_fave_array = data.branch_faves;
+        next.branch_fave_array = data.branch_faves;
       }
 
-      await storage.set(updates);
-
-      return migrate(storage);
+      return migrateData(next);
     }
 
     case 1: {
@@ -60,26 +63,25 @@ export async function migrate(storage: Browser.storage.StorageArea): Promise<voi
       const cardProtects = new Set<number>((data.card_protect_array as number[]) || []);
       const cardDiscards = new Set<number>((data.card_discard_array as number[]) || []);
 
-      const updates: Record<string, unknown> = {};
+      const next: Record<string, unknown> = { ...data };
 
-      Object.assign(updates, packSet(branchFaves, 'branch_faves'));
-      Object.assign(updates, packSet(storyletFaves, 'storylet_faves'));
-      Object.assign(updates, packSet(cardProtects, 'card_protects'));
-      Object.assign(updates, packSet(cardDiscards, 'card_discards'));
-      updates.storage_schema = 2;
-      await storage.set(updates);
+      Object.assign(next, packSet(branchFaves, 'branch_faves'));
+      Object.assign(next, packSet(storyletFaves, 'storylet_faves'));
+      Object.assign(next, packSet(cardProtects, 'card_protects'));
+      Object.assign(next, packSet(cardDiscards, 'card_discards'));
+      next.storage_schema = 2;
 
-      return migrate(storage);
+      return migrateData(next);
     }
 
     case 2: {
       // v2 -> v3: Convert block_action to boolean, rename card keys
-      const updates: Record<string, unknown> = {};
+      const next: Record<string, unknown> = { ...data };
       const keysToRemove: string[] = [];
 
       // Convert block_action from string "true"/"false" to boolean
       if (typeof data.block_action === 'string') {
-        updates.block_action = data.block_action === 'true';
+        next.block_action = data.block_action === 'true';
       }
 
       // Handle card_protects -> card_faves rename/merge
@@ -91,12 +93,12 @@ export async function migrate(storage: Browser.storage.StorageArea): Promise<voi
           const existingFaves = unpackSet(data, 'card_faves');
           const merged = new Set([...existingFaves, ...cardProtects]);
 
-          Object.assign(updates, packSet(merged, 'card_faves'));
+          Object.assign(next, packSet(merged, 'card_faves'));
           keysToRemove.push('card_protects_keys', ...protectKeys);
         } else {
           // card_protects_keys exists but is empty — initialize card_faves if needed
           if (!('card_faves_keys' in data)) {
-            updates.card_faves_keys = [];
+            next.card_faves_keys = [];
           }
 
           keysToRemove.push('card_protects_keys');
@@ -113,12 +115,12 @@ export async function migrate(storage: Browser.storage.StorageArea): Promise<voi
           const existingAvoids = unpackSet(data, 'card_avoids');
           const merged = new Set([...existingAvoids, ...cardDiscards]);
 
-          Object.assign(updates, packSet(merged, 'card_avoids'));
+          Object.assign(next, packSet(merged, 'card_avoids'));
           keysToRemove.push('card_discards_keys', ...discardKeys);
         } else {
           // card_discards_keys exists but is empty — initialize card_avoids if needed
           if (!('card_avoids_keys' in data)) {
-            updates.card_avoids_keys = [];
+            next.card_avoids_keys = [];
           }
 
           keysToRemove.push('card_discards_keys');
@@ -126,53 +128,74 @@ export async function migrate(storage: Browser.storage.StorageArea): Promise<voi
       }
       // If card_discards_keys doesn't exist, don't touch card_avoids
 
-      updates.storage_schema = 3;
-      await storage.set(updates);
+      next.storage_schema = 3;
 
-      if (keysToRemove.length > 0) {
-        await storage.remove(keysToRemove);
+      for (const key of keysToRemove) {
+        delete next[key];
       }
 
-      return migrate(storage);
+      return migrateData(next);
     }
 
     case 3: {
       // v3 -> v4: Convert block_action boolean to click_protection enum
-      const updates: Record<string, unknown> = {};
-      const keysToRemove: string[] = [];
+      const next: Record<string, unknown> = { ...data };
 
       if (data.block_action === true) {
-        updates.click_protection = 'shift';
+        next.click_protection = 'shift';
       } else {
-        updates.click_protection = 'off';
+        next.click_protection = 'off';
       }
 
-      keysToRemove.push('block_action');
+      delete next.block_action;
 
-      updates.storage_schema = STORAGE_SCHEMA_VERSION;
-      await storage.set(updates);
+      next.storage_schema = STORAGE_SCHEMA_VERSION;
 
-      if (keysToRemove.length > 0) {
-        await storage.remove(keysToRemove);
-      }
-
-      return migrate(storage);
+      return migrateData(next);
     }
 
     default:
-      // Unknown version (probably synced from newer extension)
-      console.error(
+      throw new Error(
         `Unknown data storage schema (got ${version}, expected ${STORAGE_SCHEMA_VERSION})`,
       );
+  }
+}
 
-      if (browser.runtime.requestUpdateCheck) {
-        try {
-          await browser.runtime.requestUpdateCheck();
-        } catch {
-          // Ignore — Firefox may not support this
-        }
+export async function migrate(storage: Browser.storage.StorageArea): Promise<void> {
+  const data = (await storage.get(null)) as Record<string, unknown>;
+  const version = detectVersion(data);
+
+  if (version === STORAGE_SCHEMA_VERSION) {
+    return;
+  }
+
+  let migrated: Record<string, unknown>;
+
+  try {
+    migrated = migrateData(data);
+  } catch {
+    // Unknown version (probably synced from newer extension)
+    console.error(
+      `Unknown data storage schema (got ${version}, expected ${STORAGE_SCHEMA_VERSION})`,
+    );
+
+    if (browser.runtime.requestUpdateCheck) {
+      try {
+        await browser.runtime.requestUpdateCheck();
+      } catch {
+        // Ignore — Firefox may not support this
       }
+    }
 
-      return;
+    return;
+  }
+
+  // Determine which keys were removed during migration
+  const keysToRemove = Object.keys(data).filter((k) => !(k in migrated));
+
+  await storage.set(migrated);
+
+  if (keysToRemove.length > 0) {
+    await storage.remove(keysToRemove);
   }
 }

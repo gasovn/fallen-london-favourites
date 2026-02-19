@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { migrate, detectVersion } from '../migration';
+import { migrate, migrateData, detectVersion } from '../migration';
 import { unpackSet } from '../storage';
 import { STORAGE_SCHEMA_VERSION } from '@/types';
 import { createMockStorage, stubBrowserGlobal } from '../../../tests/helpers/mock-storage';
@@ -30,6 +30,93 @@ describe('detectVersion', () => {
 
   it('returns current version for empty data (fresh install)', () => {
     expect(detectVersion({})).toBe(STORAGE_SCHEMA_VERSION);
+  });
+});
+
+describe('migrateData', () => {
+  it('migrates v2 raw dump to v4 in memory', () => {
+    const input: Record<string, unknown> = {
+      storage_schema: 2,
+      block_action: 'true',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101, 202],
+      branch_avoids_keys: [],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_protects_keys: ['card_protects_0'],
+      card_protects_0: [701, 702],
+      card_discards_keys: ['card_discards_0'],
+      card_discards_0: [801],
+    };
+
+    const result = migrateData(input);
+
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
+    expect(result.click_protection).toBe('shift');
+    expect(result.block_action).toBeUndefined();
+
+    const branchFaves = unpackSet(result, 'branch_faves');
+
+    expect(branchFaves).toEqual(new Set([101, 202]));
+
+    const cardFaves = unpackSet(result, 'card_faves');
+
+    expect(cardFaves).toEqual(new Set([701, 702]));
+
+    const cardAvoids = unpackSet(result, 'card_avoids');
+
+    expect(cardAvoids).toEqual(new Set([801]));
+
+    expect(result.card_protects_keys).toBeUndefined();
+    expect(result.card_discards_keys).toBeUndefined();
+  });
+
+  it('returns data unchanged when already at current version', () => {
+    const input: Record<string, unknown> = {
+      storage_schema: 4,
+      click_protection: 'shift',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101],
+      card_faves_keys: [],
+      card_avoids_keys: [],
+    };
+
+    const result = migrateData(input);
+
+    expect(result).toEqual(input);
+  });
+
+  it('migrates v0 data through full chain', () => {
+    const input: Record<string, unknown> = {
+      storage_schema: 0,
+      branch_faves: [101, 202, 303],
+    };
+
+    const result = migrateData(input);
+
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
+
+    const branchFaves = unpackSet(result, 'branch_faves');
+
+    expect(branchFaves).toEqual(new Set([101, 202, 303]));
+  });
+
+  it('does not mutate the input object', () => {
+    const input: Record<string, unknown> = {
+      storage_schema: 2,
+      block_action: 'true',
+      branch_faves_keys: [],
+      branch_avoids_keys: [],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_protects_keys: [],
+      card_discards_keys: [],
+    };
+    const copy = JSON.parse(JSON.stringify(input));
+
+    migrateData(input);
+
+    expect(input).toEqual(copy);
   });
 });
 

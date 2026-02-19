@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validateImport, exportData, importData } from '../io';
+import { validateImport, exportData, importData, convertRawDump } from '../io';
 import { packSet, unpackSet } from '../storage';
 import {
   EXPORT_FORMAT,
@@ -112,7 +112,7 @@ describe('validateImport', () => {
       expect(result.valid).toBe(false);
 
       if (!result.valid) {
-        expect(result.error).toBe('Not a Fallen London Favourites export file');
+        expect(result.error).toBe('Unrecognized file format');
       }
     });
   });
@@ -427,24 +427,185 @@ describe('importData', () => {
   });
 });
 
+describe('convertRawDump', () => {
+  it('converts v2 ZolanaPrime dump to ExportFile', () => {
+    const dump: Record<string, unknown> = {
+      storage_schema: 2,
+      block_action: 'true',
+      branch_reorder_mode: 'branch_reorder_all',
+      switch_mode: 'modifier_click',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101, 202],
+      branch_avoids_keys: [],
+      storylet_faves_keys: ['storylet_faves_0'],
+      storylet_faves_0: [10],
+      storylet_avoids_keys: [],
+      card_protects_keys: ['card_protects_0'],
+      card_protects_0: [1, 2],
+      card_discards_keys: ['card_discards_0'],
+      card_discards_0: [5],
+    };
+
+    const result = convertRawDump(dump);
+
+    expect(result.format).toBe(EXPORT_FORMAT);
+    expect(result.version).toBe(EXPORT_VERSION);
+    expect(typeof result.exported_at).toBe('string');
+    expect(result.data.branch_faves).toEqual([101, 202]);
+    expect(result.data.branch_avoids).toEqual([]);
+    expect(result.data.storylet_faves).toEqual([10]);
+    expect(result.data.storylet_avoids).toEqual([]);
+    expect(result.data.card_faves).toEqual([1, 2]);
+    expect(result.data.card_avoids).toEqual([5]);
+    expect(result.options.branch_reorder_mode).toBe('branch_reorder_all');
+    expect(result.options.switch_mode).toBe('modifier_click');
+    expect(result.options.click_protection).toBe('shift');
+  });
+
+  it('converts v0 dump with plain arrays', () => {
+    const dump: Record<string, unknown> = {
+      branch_faves: [101, 202],
+    };
+
+    const result = convertRawDump(dump);
+
+    expect(result.format).toBe(EXPORT_FORMAT);
+    expect(result.data.branch_faves).toEqual([101, 202]);
+    expect(result.data.branch_avoids).toEqual([]);
+  });
+
+  it('applies default options when dump has none', () => {
+    const dump: Record<string, unknown> = {
+      storage_schema: 2,
+      branch_faves_keys: [],
+      branch_avoids_keys: [],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_protects_keys: [],
+      card_discards_keys: [],
+    };
+
+    const result = convertRawDump(dump);
+
+    expect(result.options).toEqual({
+      branch_reorder_mode: DEFAULT_OPTIONS.branch_reorder_mode,
+      switch_mode: DEFAULT_OPTIONS.switch_mode,
+      click_protection: 'off',
+    });
+  });
+});
+
+describe('validateImport with raw dumps', () => {
+  it('accepts a v2 raw storage dump', () => {
+    const dump = {
+      storage_schema: 2,
+      block_action: 'true',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101, 202],
+      branch_avoids_keys: [],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_protects_keys: ['card_protects_0'],
+      card_protects_0: [1, 2],
+      card_discards_keys: [],
+    };
+
+    const result = validateImport(dump);
+
+    expect(result.valid).toBe(true);
+
+    if (result.valid) {
+      expect(result.data.format).toBe(EXPORT_FORMAT);
+      expect(result.data.data.branch_faves).toEqual([101, 202]);
+      expect(result.data.data.card_faves).toEqual([1, 2]);
+      expect(result.data.options.click_protection).toBe('shift');
+    }
+  });
+
+  it('accepts a v0 raw storage dump', () => {
+    const dump = { branch_faves: [101, 202] };
+
+    const result = validateImport(dump);
+
+    expect(result.valid).toBe(true);
+
+    if (result.valid) {
+      expect(result.data.data.branch_faves).toEqual([101, 202]);
+    }
+  });
+
+  it('accepts a legacy master dump (no storage_schema, has _keys)', () => {
+    const dump = {
+      block_action: 'false',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101],
+      card_faves_keys: [],
+      card_avoids_keys: [],
+    };
+
+    const result = validateImport(dump);
+
+    expect(result.valid).toBe(true);
+
+    if (result.valid) {
+      expect(result.data.data.branch_faves).toEqual([101]);
+    }
+  });
+
+  it('rejects unrecognized JSON object', () => {
+    const result = validateImport({ foo: 'bar', baz: 123 });
+
+    expect(result.valid).toBe(false);
+
+    if (!result.valid) {
+      expect(result.error).toMatch(/unrecognized/i);
+    }
+  });
+
+  it('still accepts native ExportFile format', () => {
+    const input = {
+      format: 'fallen-london-favourites',
+      version: 2,
+      exported_at: '2026-02-17T12:00:00Z',
+      data: {
+        branch_faves: [101],
+        branch_avoids: [],
+        storylet_faves: [],
+        storylet_avoids: [],
+        card_faves: [],
+        card_avoids: [],
+      },
+      options: {
+        branch_reorder_mode: 'branch_reorder_active',
+        switch_mode: 'click_through',
+        click_protection: 'off',
+      },
+    };
+
+    const result = validateImport(input);
+
+    expect(result.valid).toBe(true);
+  });
+});
+
+let storage: Record<string, unknown>;
+
+function useStatefulMocks(initial: Record<string, unknown>): void {
+  storage = { ...initial };
+  mockGet.mockImplementation(() => Promise.resolve({ ...storage }));
+  mockSet.mockImplementation((items) => {
+    Object.assign(storage, items);
+
+    return Promise.resolve();
+  });
+  mockClear.mockImplementation(() => {
+    storage = {};
+
+    return Promise.resolve();
+  });
+}
+
 describe('round-trip: export → import → export', () => {
-  let storage: Record<string, unknown>;
-
-  function useStatefulMocks(initial: Record<string, unknown>): void {
-    storage = { ...initial };
-    mockGet.mockImplementation(() => Promise.resolve({ ...storage }));
-    mockSet.mockImplementation((items) => {
-      Object.assign(storage, items);
-
-      return Promise.resolve();
-    });
-    mockClear.mockImplementation(() => {
-      storage = {};
-
-      return Promise.resolve();
-    });
-  }
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -542,5 +703,50 @@ describe('round-trip: export → import → export', () => {
     expect(exported.version).toBe(EXPORT_VERSION);
     expect(exported.options.click_protection).toBe('shift');
     expect((exported.options as unknown as Record<string, unknown>).block_action).toBeUndefined();
+  });
+});
+
+describe('round-trip: raw dump → import → export', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('v2 ZolanaPrime dump survives full round-trip', async () => {
+    useStatefulMocks({});
+
+    const dump = {
+      storage_schema: 2,
+      block_action: 'true',
+      branch_reorder_mode: 'branch_reorder_all',
+      switch_mode: 'modifier_click',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101, 202],
+      branch_avoids_keys: ['branch_avoids_0'],
+      branch_avoids_0: [301],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_protects_keys: ['card_protects_0'],
+      card_protects_0: [1, 2],
+      card_discards_keys: ['card_discards_0'],
+      card_discards_0: [5],
+    };
+
+    const validated = validateImport(dump);
+
+    expect(validated.valid).toBe(true);
+
+    if (validated.valid) {
+      await importData(validated.data);
+    }
+
+    const exported = await exportData();
+
+    expect(exported.data.branch_faves).toEqual([101, 202]);
+    expect(exported.data.branch_avoids).toEqual([301]);
+    expect(exported.data.card_faves).toEqual([1, 2]);
+    expect(exported.data.card_avoids).toEqual([5]);
+    expect(exported.options.click_protection).toBe('shift');
+    expect(exported.options.branch_reorder_mode).toBe('branch_reorder_all');
+    expect(exported.options.switch_mode).toBe('modifier_click');
   });
 });

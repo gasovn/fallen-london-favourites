@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 — 2026-02-19
+
+- Import/export favourites and settings via JSON file
+- Click protection reworked: three modes (off / shift / confirm) instead of a single checkbox
+- Storage migration from old block_action format
+
 ## 0.6.4 — 2026-02-17
 
 - Click protection "SURE?" on avoided and faved cards

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Browser } from 'wxt/browser';
 import { validateImport, exportData, importData } from '../io';
 import { packSet, unpackSet } from '../storage';
+import { cleanupStorage } from '../cleanup';
+import { migrate } from '../migration';
+import { createMockStorage } from '../../../tests/helpers/mock-storage';
 import {
   EXPORT_FORMAT,
   EXPORT_VERSION,
@@ -542,5 +546,58 @@ describe('round-trip: export → import → export', () => {
     expect(exported.version).toBe(EXPORT_VERSION);
     expect(exported.options.click_protection).toBe('shift');
     expect((exported.options as unknown as Record<string, unknown>).block_action).toBeUndefined();
+  });
+});
+
+describe('cleanup integration', () => {
+  it('saveFaves then loadData preserves all data', async () => {
+    const storage = createMockStorage();
+    const data: Record<string, unknown> = {};
+
+    Object.assign(data, packSet(new Set([100, 200]), 'branch_faves'));
+    Object.assign(data, packSet(new Set([300]), 'branch_avoids'));
+    Object.assign(data, packSet(new Set(), 'storylet_faves'));
+    Object.assign(data, packSet(new Set(), 'storylet_avoids'));
+    Object.assign(data, packSet(new Set([400, 500]), 'card_faves'));
+    Object.assign(data, packSet(new Set(), 'card_avoids'));
+    await storage.set(data);
+
+    await cleanupStorage(storage);
+
+    const stored = await storage.get(null);
+
+    expect(unpackSet(stored, 'branch_faves')).toEqual(new Set([100, 200]));
+    expect(unpackSet(stored, 'branch_avoids')).toEqual(new Set([300]));
+    expect(unpackSet(stored, 'storylet_faves')).toEqual(new Set());
+    expect(unpackSet(stored, 'card_faves')).toEqual(new Set([400, 500]));
+  });
+
+  it('migration then cleanup produces clean storage', async () => {
+    const storage = createMockStorage({
+      storage_schema: 2,
+      block_action: 'true',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101],
+      card_protects_keys: ['card_protects_0'],
+      card_protects_0: [701],
+      card_discards_keys: [],
+    });
+
+    await migrate(storage as unknown as Browser.storage.StorageArea);
+    await cleanupStorage(storage);
+
+    const data = storage._getData();
+
+    // Migrated correctly
+    expect(data.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
+    expect(data.click_protection).toBe('shift');
+    // Zombies cleaned
+    expect(data).not.toHaveProperty('block_action');
+    expect(data).not.toHaveProperty('card_protects_keys');
+    expect(data).not.toHaveProperty('card_protects_0');
+    expect(data).not.toHaveProperty('card_discards_keys');
+    // Data preserved
+    expect(unpackSet(data, 'branch_faves')).toEqual(new Set([101]));
+    expect(unpackSet(data, 'card_faves')).toEqual(new Set([701]));
   });
 });

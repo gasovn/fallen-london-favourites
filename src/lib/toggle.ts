@@ -1,5 +1,7 @@
 import type { FaveData, FaveState, SwitchMode } from '@/types';
+import { DATA_KEYS } from '@/types';
 import { packSet, setOptions } from '@/lib/storage';
+import { findOrphanedChunks } from '@/lib/cleanup';
 
 export const ICON_SUFFIX: Record<FaveState, string> = {
   fave: 'filled',
@@ -128,4 +130,29 @@ export async function saveFaves(sets: FaveSets): Promise<void> {
   Object.assign(data, packSet(sets.card_avoids, 'card_avoids'));
 
   await setOptions(data);
+
+  // Cleanup orphaned chunks — best effort, never breaks the save
+  try {
+    const current = await browser.storage.local.get(null);
+
+    // Race condition check: verify our _keys are still in place
+    const keysMatch = DATA_KEYS.every((cat) => {
+      const written = data[`${cat}_keys`] as string[];
+      const stored = current[`${cat}_keys`];
+
+      return Array.isArray(stored) && JSON.stringify(stored) === JSON.stringify(written);
+    });
+
+    if (!keysMatch) {
+      return;
+    }
+
+    const orphans = findOrphanedChunks(current);
+
+    if (orphans.length > 0) {
+      await browser.storage.local.remove(orphans);
+    }
+  } catch {
+    // Non-critical — orphans cleaned up on next startup
+  }
 }

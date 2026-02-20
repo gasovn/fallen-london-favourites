@@ -1,4 +1,5 @@
 import { migrate } from './migration';
+import { findOrphanedChunks, findZombieKeys } from './cleanup';
 
 const SYNC_PERIOD = 1000 * 3; // 3 seconds — safe for both syncing and service worker lifetime
 
@@ -29,6 +30,18 @@ async function localToSync(): Promise<void> {
     const data = await browser.storage.local.get(null);
 
     await browser.storage.sync.set(data);
+
+    // Cleanup stale keys in sync — best effort
+    try {
+      const syncData = await browser.storage.sync.get(null);
+      const staleKeys = [...findOrphanedChunks(syncData), ...findZombieKeys(syncData)];
+
+      if (staleKeys.length > 0) {
+        await browser.storage.sync.remove(staleKeys);
+      }
+    } catch {
+      // Sync cleanup failed — non-critical
+    }
   } catch (error) {
     console.error('Error syncing to sync storage:', error);
   }
@@ -54,4 +67,4 @@ export function setupSyncListener(): void {
   });
 }
 
-export { syncToLocal };
+export { syncToLocal, localToSync };

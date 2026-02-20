@@ -1,5 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { getNextState, getNextCardState, getCurrentState, applyState } from '../toggle';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  getNextState,
+  getNextCardState,
+  getCurrentState,
+  applyState,
+  saveFaves,
+  type FaveSets,
+} from '../toggle';
+import { createMockStorage } from '../../../tests/helpers/mock-storage';
 
 describe('getCurrentState', () => {
   it('returns fave when id is in faves set', () => {
@@ -160,5 +168,176 @@ describe('applyState', () => {
     applyState(2, 'avoid', faves, avoids);
     expect(faves).toEqual(new Set([1, 3]));
     expect(avoids).toEqual(new Set([2, 4, 5]));
+  });
+});
+
+describe('saveFaves', () => {
+  let mockStorage: ReturnType<typeof createMockStorage>;
+
+  beforeEach(() => {
+    mockStorage = createMockStorage();
+    vi.stubGlobal('browser', {
+      storage: { local: mockStorage },
+    });
+  });
+
+  function emptySets(): FaveSets {
+    return {
+      branch_faves: new Set(),
+      branch_avoids: new Set(),
+      storylet_faves: new Set(),
+      storylet_avoids: new Set(),
+      card_faves: new Set(),
+      card_avoids: new Set(),
+    };
+  }
+
+  it('removes orphaned chunks after save', async () => {
+    mockStorage = createMockStorage({
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [100, 200],
+    });
+    vi.stubGlobal('browser', { storage: { local: mockStorage } });
+
+    const sets = emptySets();
+
+    await saveFaves(sets);
+
+    const data = mockStorage._getData();
+
+    expect(data.branch_faves_keys).toEqual([]);
+    expect(data).not.toHaveProperty('branch_faves_0');
+  });
+
+  it('does not remove valid chunks', async () => {
+    const sets = emptySets();
+
+    sets.branch_faves = new Set([100, 200]);
+
+    await saveFaves(sets);
+
+    const data = mockStorage._getData();
+
+    expect(data.branch_faves_keys).toEqual(['branch_faves_0']);
+    expect(data.branch_faves_0).toEqual([100, 200]);
+  });
+
+  it('removes _1 when set shrinks to one chunk', async () => {
+    mockStorage = createMockStorage({
+      branch_faves_keys: ['branch_faves_0', 'branch_faves_1'],
+      branch_faves_0: Array.from({ length: 512 }, (_, i) => i),
+      branch_faves_1: [999],
+    });
+    vi.stubGlobal('browser', { storage: { local: mockStorage } });
+
+    const sets = emptySets();
+
+    sets.branch_faves = new Set([42]);
+
+    await saveFaves(sets);
+
+    const data = mockStorage._getData();
+
+    expect(data.branch_faves_keys).toEqual(['branch_faves_0']);
+    expect(data).not.toHaveProperty('branch_faves_1');
+  });
+
+  it('handles all 6 categories independently', async () => {
+    mockStorage = createMockStorage({
+      branch_faves_keys: [],
+      branch_faves_0: [100],
+      card_faves_keys: [],
+      card_faves_0: [200],
+      storylet_faves_keys: ['storylet_faves_0'],
+      storylet_faves_0: [300],
+    });
+    vi.stubGlobal('browser', { storage: { local: mockStorage } });
+
+    const sets = emptySets();
+
+    sets.storylet_faves = new Set([300]);
+
+    await saveFaves(sets);
+
+    const data = mockStorage._getData();
+
+    expect(data).not.toHaveProperty('branch_faves_0');
+    expect(data).not.toHaveProperty('card_faves_0');
+    expect(data).toHaveProperty('storylet_faves_0');
+  });
+
+  it('survives cleanup failure (remove throws)', async () => {
+    const failingStorage = createMockStorage({
+      branch_faves_keys: [],
+      branch_faves_0: [100],
+    });
+
+    failingStorage.remove = async () => {
+      throw new Error('Storage error');
+    };
+
+    vi.stubGlobal('browser', { storage: { local: failingStorage } });
+
+    const sets = emptySets();
+
+    // Should not throw — cleanup failure is swallowed
+    await expect(saveFaves(sets)).resolves.toBeUndefined();
+
+    // Data is still written correctly despite cleanup failure
+    const data = failingStorage._getData();
+
+    expect(data.branch_faves_keys).toEqual([]);
+  });
+
+  it('skips orphan cleanup when _keys changed between save and read', async () => {
+    mockStorage = createMockStorage({
+      branch_faves_0: [999],
+    });
+
+    const originalGet = mockStorage.get;
+
+    mockStorage.get = async (keys: Parameters<typeof originalGet>[0]) => {
+      const result = await originalGet(keys);
+
+      if (keys === null) {
+        // Simulate a concurrent save that changed _keys
+        result.branch_faves_keys = ['branch_faves_0'];
+      }
+
+      return result;
+    };
+
+    vi.stubGlobal('browser', { storage: { local: mockStorage } });
+
+    const sets = emptySets();
+
+    await saveFaves(sets);
+
+    // Orphan should NOT be removed — guard detected _keys mismatch
+    const data = mockStorage._getData();
+
+    expect(data).toHaveProperty('branch_faves_0');
+  });
+
+  it('two sequential saves — second data is intact', async () => {
+    const sets1 = emptySets();
+
+    sets1.branch_faves = new Set([100, 200]);
+    sets1.card_faves = new Set([300]);
+
+    await saveFaves(sets1);
+
+    const sets2 = emptySets();
+
+    sets2.branch_faves = new Set([400]);
+    sets2.storylet_faves = new Set([500, 600]);
+
+    await saveFaves(sets2);
+
+    const data = mockStorage._getData();
+
+    expect(data.branch_faves_0).toEqual([400]);
+    expect(data).not.toHaveProperty('card_faves_0');
+    expect(data.storylet_faves_0).toEqual([500, 600]);
   });
 });

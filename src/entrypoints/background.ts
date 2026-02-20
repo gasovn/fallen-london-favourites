@@ -1,4 +1,5 @@
 import { migrate } from '@/lib/migration';
+import { cleanupStorage } from '@/lib/cleanup';
 import { setupSyncListener, syncToLocal } from '@/lib/sync';
 
 export default defineBackground(() => {
@@ -18,6 +19,19 @@ export default defineBackground(() => {
       await migrate(browser.storage.local);
     } catch (e) {
       console.error('Local migration failed:', e);
+    }
+
+    // Cleanup stale keys from both storages
+    try {
+      await cleanupStorage(browser.storage.local);
+    } catch {
+      // Local cleanup failed — non-critical
+    }
+
+    try {
+      await cleanupStorage(browser.storage.sync);
+    } catch {
+      // Sync cleanup failed — non-critical
     }
   });
 

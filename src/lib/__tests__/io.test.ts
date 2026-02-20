@@ -497,6 +497,24 @@ describe('convertRawDump', () => {
       click_protection: 'off',
     });
   });
+
+  it('produces output that passes validateImport', () => {
+    const dump: Record<string, unknown> = {
+      storage_schema: 2,
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [42],
+      branch_avoids_keys: [],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_protects_keys: [],
+      card_discards_keys: [],
+    };
+
+    const result = convertRawDump(dump);
+    const validated = validateImport(result);
+
+    expect(validated.valid).toBe(true);
+  });
 });
 
 describe('validateImport with raw dumps', () => {
@@ -563,6 +581,48 @@ describe('validateImport with raw dumps', () => {
 
     if (!result.valid) {
       expect(result.error).toMatch(/unrecognized/i);
+    }
+  });
+
+  it('accepts a v4 raw storage dump (our own extension)', () => {
+    const dump = {
+      storage_schema: 4,
+      click_protection: 'off',
+      branch_faves_keys: [],
+      branch_avoids_keys: [],
+      storylet_faves_keys: ['storylet_faves_0'],
+      storylet_faves_0: [343882],
+      storylet_avoids_keys: [],
+      card_faves_keys: ['card_faves_0'],
+      card_faves_0: [324583],
+      card_avoids_keys: ['card_avoids_0'],
+      card_avoids_0: [22270],
+    };
+
+    const result = validateImport(dump);
+
+    expect(result.valid).toBe(true);
+
+    if (result.valid) {
+      expect(result.data.data.storylet_faves).toEqual([343882]);
+      expect(result.data.data.card_faves).toEqual([324583]);
+      expect(result.data.data.card_avoids).toEqual([22270]);
+    }
+  });
+
+  it('rejects raw dump from a newer schema version', () => {
+    const dump = {
+      storage_schema: 99,
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101],
+    };
+
+    const result = validateImport(dump);
+
+    expect(result.valid).toBe(false);
+
+    if (!result.valid) {
+      expect(result.error).toMatch(/newer version/i);
     }
   });
 

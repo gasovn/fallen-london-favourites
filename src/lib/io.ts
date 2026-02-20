@@ -38,52 +38,37 @@ function sanitizeOptions(raw: Record<string, unknown>): Options {
   };
 }
 
-export function convertRawDump(raw: Record<string, unknown>): ExportFile {
-  const migrated = migrateData(raw);
-
-  const data = Object.fromEntries(
-    DATA_KEYS.map((key) => {
-      const set = unpackSet(migrated, key);
-
-      return [key, Array.from(set).sort((a, b) => a - b)];
-    }),
-  ) as unknown as ExportFile['data'];
-
-  const options = sanitizeOptions(migrated);
-
-  return {
-    format: EXPORT_FORMAT,
-    version: EXPORT_VERSION,
-    exported_at: new Date().toISOString(),
-    data,
-    options,
-  };
-}
-
-export async function exportData(): Promise<ExportFile> {
-  const raw = await browser.storage.local.get(null);
-
-  const data = Object.fromEntries(
+function extractData(raw: Record<string, unknown>): ExportFile['data'] {
+  return Object.fromEntries(
     DATA_KEYS.map((key) => {
       const set = unpackSet(raw, key);
 
       return [key, Array.from(set).sort((a, b) => a - b)];
     }),
   ) as unknown as ExportFile['data'];
+}
 
-  const options: Options = {
-    branch_reorder_mode:
-      (raw.branch_reorder_mode as BranchReorderMode) ?? DEFAULT_OPTIONS.branch_reorder_mode,
-    switch_mode: (raw.switch_mode as SwitchMode) ?? DEFAULT_OPTIONS.switch_mode,
-    click_protection: parseClickProtection(raw.click_protection),
-  };
+export function convertRawDump(raw: Record<string, unknown>): ExportFile {
+  const migrated = migrateData(raw);
 
   return {
     format: EXPORT_FORMAT,
     version: EXPORT_VERSION,
     exported_at: new Date().toISOString(),
-    data,
-    options,
+    data: extractData(migrated),
+    options: sanitizeOptions(migrated),
+  };
+}
+
+export async function exportData(): Promise<ExportFile> {
+  const raw = await browser.storage.local.get(null);
+
+  return {
+    format: EXPORT_FORMAT,
+    version: EXPORT_VERSION,
+    exported_at: new Date().toISOString(),
+    data: extractData(raw),
+    options: sanitizeOptions(raw),
   };
 }
 
@@ -169,9 +154,17 @@ export function validateImport(raw: unknown): ImportResult {
   // No format field — try as raw storage dump
   const version = detectVersion(obj);
 
-  if (version >= STORAGE_SCHEMA_VERSION) {
-    // detectVersion returns STORAGE_SCHEMA_VERSION for empty/unrecognized data
+  if (version >= STORAGE_SCHEMA_VERSION && !Object.keys(obj).some((k) => k.endsWith('_keys'))) {
+    // detectVersion returns STORAGE_SCHEMA_VERSION for empty/unrecognized data,
+    // but a real v4 dump will have _keys fields (e.g. branch_faves_keys)
     return { valid: false, error: 'Unrecognized file format' };
+  }
+
+  if (version > STORAGE_SCHEMA_VERSION) {
+    return {
+      valid: false,
+      error: 'This data was created by a newer version. Please update the extension',
+    };
   }
 
   try {

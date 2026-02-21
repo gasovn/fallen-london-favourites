@@ -432,7 +432,7 @@ describe('importData', () => {
 });
 
 describe('convertRawDump', () => {
-  it('converts v2 ZolanaPrime dump to ExportFile', () => {
+  it('converts v2 legacy dump to ExportFile', () => {
     const dump: Record<string, unknown> = {
       storage_schema: 2,
       block_action: 'true',
@@ -775,7 +775,7 @@ describe('round-trip: raw dump → import → export', () => {
     vi.clearAllMocks();
   });
 
-  it('v2 ZolanaPrime dump survives full round-trip', async () => {
+  it('v2 legacy dump survives full round-trip', async () => {
     useStatefulMocks({});
 
     const dump = {

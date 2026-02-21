@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1 — 2026-02-21
+
+- Import raw storage dumps from other FL Favourites forks via the same Import button
+- Automatic cleanup of orphaned storage chunks and leftover keys from old formats
+- Documentation site and Help link on the Options page
+
 ## 0.7.0 — 2026-02-19
 
 - Import/export favourites and settings via JSON file

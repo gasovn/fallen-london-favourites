@@ -8,10 +8,11 @@ Mark storylets, branches and cards as favourite or avoided in Fallen London. Fav
 
 - Green/red highlights on favourite and avoided choices
 - Automatic reordering: favourites up, avoided down (configurable)
-- Click protection on avoided and faved choices: off, hold Shift to bypass, or confirmation click (long press on mobile)
+- Click protection on avoided choices: off, hold Shift to bypass, or confirmation click (long press on mobile)
 - Two click modes: cycle through states, or click/Ctrl+Click (tap/long press on mobile)
 - Import/export your favourites and settings as a JSON file
 - Settings sync across devices via Chrome Sync / Firefox Account
+- Migration from other FL Favourites forks — import raw storage dumps through the same Import button
 - Firefox for Android supported
 
 <p>
@@ -30,6 +31,7 @@ Mark storylets, branches and cards as favourite or avoided in Fallen London. Fav
 
 - [Chrome Web Store](https://chromewebstore.google.com/detail/fallen-london-favourites/jkaoljkdjoecocmlnncdljoeeijlcjao)
 - [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/fallen-london-favourites/) (desktop and Android 142+)
+- [Documentation](https://gasovn.github.io/fallen-london-favourites/)
 
 ## Development
 

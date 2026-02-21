@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fallen London Favourites</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="img/icon32.png" type="image/png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="#" class="site-logo">
+      <img src="img/icon32.png" alt="" width="24" height="24">
+      Fallen London Favourites
+    </a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+    <label for="nav-toggle" class="nav-toggle-label">
+      <span></span>
+      <span></span>
+      <span></span>
+    </label>
+    <nav class="site-nav">
+      <a href="#about">About</a>
+      <a href="#settings">Settings</a>
+      <a href="#import-export">Import / Export</a>
+      <a href="#migration">Migration</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="about" class="section">
+    <h2>About</h2>
+    <p>
+      A browser extension for <a href="https://www.fallenlondon.com">Fallen London</a>
+      that lets you mark storylets, branches, and cards as
+      <strong>favourite</strong> or <strong>avoided</strong>.
+    </p>
+    <p>
+      Favourites are highlighted in green and move to the top of the list.
+      Avoided choices are highlighted in red, sink to the bottom, and can be
+      protected from accidental clicks.
+    </p>
+
+    <div class="screenshots">
+      <figure class="screenshot-figure">
+        <img class="screenshot" src="img/fave.png"
+             alt="Favourite storylets highlighted in green">
+        <figcaption>Favourite storylets</figcaption>
+      </figure>
+      <figure class="screenshot-figure">
+        <img class="screenshot" src="img/avoid.png"
+             alt="Avoided storylets highlighted in red">
+        <figcaption>Avoided storylets</figcaption>
+      </figure>
+    </div>
+
+    <div class="screenshots">
+      <figure class="screenshot-figure">
+        <img class="screenshot" src="img/cards.png"
+             alt="Cards with favourite and avoid status">
+        <figcaption>Opportunity cards</figcaption>
+      </figure>
+    </div>
+
+    <div class="screenshots screenshots--mobile">
+      <figure class="screenshot-figure">
+        <img class="screenshot screenshot--mobile" src="img/mobile.jpg"
+             alt="Storylets on Firefox for Android">
+        <figcaption>Storylets on mobile</figcaption>
+      </figure>
+      <figure class="screenshot-figure">
+        <img class="screenshot screenshot--mobile" src="img/mobile-cards.jpg"
+             alt="Cards on Firefox for Android">
+        <figcaption>Cards on mobile</figcaption>
+      </figure>
+    </div>
+
+    <p>Available for Chrome and Firefox, including Firefox for Android.</p>
+
+    <div class="install-links">
+      <a href="https://chromewebstore.google.com/detail/fallen-london-favourites/jkaoljkdjoecocmlnncdljoeeijlcjao" class="install-btn" target="_blank">Chrome Web Store</a>
+      <a href="https://addons.mozilla.org/firefox/addon/fallen-london-favourites/" class="install-btn" target="_blank">Firefox Add-ons</a>
+    </div>
+  </section>
+
+  <section id="settings" class="section">
+    <h2>Settings</h2>
+    <p>
+      Each storylet, branch, and card on the page gets a small toggle button.
+      Click it to mark items as
+      <img class="icon" src="img/button_filled.png" alt="favourite icon"> favourite or
+      <img class="icon" src="img/button_avoid.png" alt="avoided icon"> avoided
+      (or back to <img class="icon" src="img/button_empty.png" alt="neutral icon"> neutral).
+      The extension highlights them and can reorder the list and protect against
+      accidental clicks. All of this is configurable on the Options page.
+    </p>
+    <p>
+      Open the extension's Options page from your browser's extension menu.
+    </p>
+
+    <figure class="screenshot-figure" style="text-align: center;">
+      <img class="screenshot" src="img/options.png"
+           alt="Options page with reordering, click mode, and click protection settings"
+           style="max-width: 480px; margin: 16px auto;">
+      <figcaption>Options page</figcaption>
+    </figure>
+
+    <h3>Reordering</h3>
+    <p>
+      Controls whether the extension changes the order of storylets and branches
+      on the page, or just highlights them.
+    </p>
+    <ul>
+      <li><strong>Highlight only</strong> — colour-code favourites (green) and
+          avoided (red) without moving anything. The list stays in its original order.</li>
+      <li><strong>Reorder unlocked</strong> — favourites move to the top, avoided
+          to the bottom. Only affects unlocked storylets — locked ones stay in place.</li>
+      <li><strong>Reorder all</strong> — same as above, but also reorders locked
+          storylets and branches.</li>
+    </ul>
+
+    <h3>Click mode</h3>
+    <p>
+      How the toggle button cycles between favourite, avoided, and neutral.
+    </p>
+    <ul>
+      <li><strong>Cycle</strong> — each click advances to the next state:
+          <img class="icon" src="img/button_empty.png" alt="neutral"> →
+          <img class="icon" src="img/button_filled.png" alt="favourite"> →
+          <img class="icon" src="img/button_avoid.png" alt="avoided"> →
+          <img class="icon" src="img/button_empty.png" alt="neutral">.
+          On mobile, each tap does the same.</li>
+      <li><strong>Modifier click</strong> — click for
+          <img class="icon" src="img/button_filled.png" alt="favourite">,
+          Ctrl+Click for
+          <img class="icon" src="img/button_avoid.png" alt="avoided">.
+          On mobile: tap to favourite, long press to avoid.</li>
+    </ul>
+
+    <h3>Click protection</h3>
+    <p>
+      Prevents accidental clicks on avoided storylets and cards. Useful when you've
+      marked something as avoided specifically to not click on it by mistake.
+    </p>
+    <ul>
+      <li><strong>Off</strong> — no protection. Clicking an avoided item works as
+          normal.</li>
+      <li><strong>Hold to bypass</strong> — avoided items ignore regular clicks.
+          Hold Shift and click to go through. On mobile: long press to bypass.</li>
+      <li><strong>Confirmation click</strong> — first click shows a warning overlay,
+          second click confirms. On mobile: first tap warns, second tap confirms.</li>
+    </ul>
+  </section>
+
+  <section id="import-export" class="section">
+    <h2>Import &amp; Export</h2>
+    <p>
+      Transfer your favourites and settings between browsers or devices using the
+      <strong>Export</strong> and <strong>Import</strong> buttons on the Options page.
+    </p>
+
+    <h3>Export</h3>
+    <p>
+      Click <strong>Export</strong> to download a JSON file with all your favourites
+      and current settings. Keep it as a backup or use it to transfer data to
+      another browser.
+    </p>
+
+    <h3>Import</h3>
+    <p>
+      Click <strong>Import</strong> and select a previously exported JSON file.
+      You'll see a summary of what's in the file — how many favourites and avoids
+      for each category — before confirming.
+    </p>
+
+    <figure class="screenshot-figure" style="text-align: center;">
+      <img class="screenshot" src="img/import-preview.png"
+           alt="Import preview showing item counts and confirmation buttons"
+           style="max-width: 480px; margin: 16px auto;">
+      <figcaption>Import preview with item counts and confirmation</figcaption>
+    </figure>
+
+    <div class="callout">
+      <strong>Heads up:</strong> importing replaces all your current favourites and
+      settings. Export first if you want to keep a backup.
+    </div>
+
+    <h3>Cross-device sync</h3>
+    <p>
+      If you're signed into Chrome Sync or Firefox Account, your favourites and
+      settings sync automatically. No need to export and import manually — changes
+      appear on all your devices.
+    </p>
+  </section>
+
+  <section id="migration" class="section">
+    <h2>Migrating from another fork</h2>
+    <p>
+      If you previously used
+      <a href="https://github.com/kav2k/fl_favourites">Playing Favourites</a>
+      by kav2k or any of its forks, you can import your existing data into this
+      extension.
+    </p>
+    <p>
+      Unfortunately, browser extensions can't access each other's storage, so the
+      process requires a few manual steps: you'll export the old extension's data
+      through the browser's DevTools console, save it to a file, and then import
+      it here.
+    </p>
+
+    <h3 class="browser-heading">Chrome</h3>
+    <ol>
+      <li>Open <code>chrome://extensions</code> in the address bar</li>
+      <li>Turn on <strong>Developer mode</strong> (toggle in the top right corner)</li>
+      <li>Find the old extension in the list</li>
+      <li>Click the <strong>Service Worker</strong> link (or <strong>background page</strong>
+          for older extensions) — a DevTools window will open</li>
+    </ol>
+
+    <figure class="screenshot-figure" style="text-align: center;">
+      <img class="screenshot" src="img/chrome-extensions.png"
+           alt="Chrome extensions page with Service Worker link"
+           style="max-width: 580px; margin: 16px auto;">
+      <figcaption>Extensions page with Developer mode enabled</figcaption>
+    </figure>
+
+    <ol start="5">
+      <li>Switch to the <strong>Console</strong> tab</li>
+      <li>Paste the following script and press <strong>Enter</strong>:</li>
+    </ol>
+
+<pre><code>chrome.storage.local.get(null, (data) =&gt; {
+  console.log(JSON.stringify(data));
+});</code></pre>
+
+    <figure class="screenshot-figure" style="text-align: center;">
+      <img class="screenshot" src="img/chrome-console.png"
+           alt="DevTools Console showing JSON output from the export script"
+           style="max-width: 580px; margin: 16px auto;">
+      <figcaption>Console output with exported data</figcaption>
+    </figure>
+
+    <ol start="7">
+      <li>Right-click the output string in the console and select
+          <strong>Copy string contents</strong></li>
+      <li>Open a text editor (Notepad, TextEdit, etc.), paste the text, and save
+          the file as <code>fl-dump.json</code></li>
+      <li>Open Fallen London Favourites Options → click <strong>Import</strong> →
+          select the file you just saved (see <a href="#import-export">Import &amp; Export</a>
+          for details)</li>
+    </ol>
+
+    <h3 class="browser-heading">Firefox</h3>
+    <ol>
+      <li>Open <code>about:debugging#/runtime/this-firefox</code> in the address bar</li>
+      <li>Find the old extension in the list</li>
+      <li>Click <strong>Inspect</strong> — a DevTools window will open</li>
+    </ol>
+
+    <figure class="screenshot-figure" style="text-align: center;">
+      <img class="screenshot" src="img/firefox-debugging.png"
+           alt="Firefox about:debugging page with Inspect button"
+           style="max-width: 580px; margin: 16px auto;">
+      <figcaption>Debugging page with extensions list</figcaption>
+    </figure>
+
+    <ol start="4">
+      <li>Switch to the <strong>Console</strong> tab</li>
+      <li>Paste the following script and press <strong>Enter</strong>:</li>
+    </ol>
+
+<pre><code>browser.storage.local.get(null).then((data) =&gt; {
+  console.log(JSON.stringify(data));
+});</code></pre>
+
+    <figure class="screenshot-figure" style="text-align: center;">
+      <img class="screenshot" src="img/firefox-console.png"
+           alt="Firefox DevTools Console showing JSON output from the export script"
+           style="max-width: 580px; margin: 16px auto;">
+      <figcaption>Console output with exported data</figcaption>
+    </figure>
+
+    <ol start="6">
+      <li>Right-click the output string and select <strong>Copy string contents</strong></li>
+      <li>Paste into a text editor and save as <code>fl-dump.json</code></li>
+      <li>Open Fallen London Favourites Options → click <strong>Import</strong> →
+          select the file (see <a href="#import-export">Import &amp; Export</a>
+          for details)</li>
+    </ol>
+
+    <div class="callout">
+      <strong>Import didn't work?</strong> Some forks may use a custom storage format
+      that isn't recognized yet. <a href="https://github.com/gasovn/fallen-london-favourites/issues">Open
+      a GitHub issue</a> or <a href="mailto:forest.vvolf@gmail.com">send an email</a> and
+      attach your exported JSON file — I'll either add support for your format or help
+      you convert the data manually.
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-links">
+    <a href="https://chromewebstore.google.com/detail/fallen-london-favourites/jkaoljkdjoecocmlnncdljoeeijlcjao">Chrome Web Store</a>
+    <span class="sep">&middot;</span>
+    <a href="https://addons.mozilla.org/firefox/addon/fallen-london-favourites/">Firefox Add-ons</a>
+    <span class="sep">&middot;</span>
+    <a href="https://github.com/gasovn/fallen-london-favourites">GitHub</a>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox">
+  <img class="lightbox-img" id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
+
+  document.addEventListener('click', (e) => {
+    const img = e.target.closest('.screenshot');
+    if (img) {
+      lightboxImg.src = img.src;
+      lightboxImg.alt = img.alt;
+      lightbox.classList.add('open');
+    }
+  });
+
+  lightbox.addEventListener('click', () => {
+    lightbox.classList.remove('open');
+  });
+</script>
+
+</body>
+</html>

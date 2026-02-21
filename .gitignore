@@ -12,5 +12,3 @@ stats-*.json
 # Logs
 *.log
 
-# Local docs (plans, checklists, instructions)
-docs/

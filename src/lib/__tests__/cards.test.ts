@@ -95,6 +95,10 @@ describe('parseCards', () => {
     document.body.appendChild(main);
   });
 
+  afterEach(() => {
+    vi.mocked(isMobile).mockReturnValue(false);
+  });
+
   it('creates toggle button in hand__card-container', () => {
     main.appendChild(createHandCard(100));
 
@@ -289,7 +293,7 @@ describe('parseCards', () => {
     expect(card.querySelector('.card_toggle_button')).toBeNull();
   });
 
-  it('uses card_*.png for hand cards, button_*.png for small cards', () => {
+  it('uses card_*.png for hand cards on desktop, button_*.png for small cards', () => {
     main.appendChild(createHandCard(100));
     main.appendChild(createSmallCard(200));
 
@@ -304,6 +308,19 @@ describe('parseCards', () => {
 
     expect(handToggle.style.backgroundImage).toContain('card_empty');
     expect(smallToggle.style.backgroundImage).toContain('button_empty');
+  });
+
+  it('uses button_*.png for hand cards on mobile', () => {
+    vi.mocked(isMobile).mockReturnValue(true);
+    main.appendChild(createHandCard(100));
+
+    parseCards(makeFaveData());
+
+    const handToggle = main.querySelector(
+      '.hand__card-container .card_toggle_button',
+    ) as HTMLElement;
+
+    expect(handToggle.style.backgroundImage).toContain('button_empty');
   });
 });
 

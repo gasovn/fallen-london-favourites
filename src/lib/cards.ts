@@ -11,9 +11,11 @@ import {
 import { isMobile, attachLongPressHandler } from '@/lib/platform';
 import { queryLast } from '@/lib/dom';
 
-// Hand cards use card_*.png (16x16), small cards use button_*.png (30x30)
+// Hand cards use card_*.png (16x16) on desktop, button_*.png (30x30) on mobile
+// Small cards always use button_*.png (30x30)
 function getCardButtonImageUrl(container: Element, state: FaveState): string {
-  const prefix = container.classList.contains('hand__card-container') ? 'card' : 'button';
+  const isHandCard = container.classList.contains('hand__card-container');
+  const prefix = isHandCard && !isMobile() ? 'card' : 'button';
   const path = `/img/${prefix}_${ICON_SUFFIX[state]}.png` as PublicPath;
 
   return browser.runtime.getURL(path);

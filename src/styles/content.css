@@ -103,9 +103,9 @@
 }
 
 @media (pointer: coarse) {
-  #main .fave_toggle_button,
-  #main .card_toggle_button {
-    height: 48px;
-    width: 48px;
+  #main .hand__card-container .card_toggle_button {
+    height: 30px;
+    width: 30px;
+    margin-top: 0;
   }
 }

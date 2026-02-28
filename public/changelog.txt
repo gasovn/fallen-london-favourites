@@ -1,3 +1,7 @@
+Version 0.7.2
+
+* Consistent 30x30 icons for hand cards on mobile instead of tiny 16x16
+
 Version 0.7.1
 
 * Import raw storage dumps from other FL Favourites forks via the same Import button

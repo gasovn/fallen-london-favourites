@@ -2,7 +2,7 @@
   "name": "fallen-london-favourites",
   "description": "Mark storylets, branches and cards as favourite or avoided in Fallen London. Favourites rise to the top, avoided sink to the bottom.",
   "private": true,
-  "version": "0.7.1",
+  "version": "0.7.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/gasovn/fallen-london-favourites"

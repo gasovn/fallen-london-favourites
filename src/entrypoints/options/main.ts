@@ -54,6 +54,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     versionEl.textContent = `v${browser.runtime.getManifest().version}`;
   }
 
+  const reviewLink = document.getElementById('reviewLink');
+
+  if (reviewLink) {
+    const isFirefox = browser.runtime.getURL('').startsWith('moz-extension://');
+
+    reviewLink.setAttribute(
+      'href',
+      isFirefox
+        ? 'https://addons.mozilla.org/firefox/addon/fallen-london-favourites/reviews/'
+        : 'https://chromewebstore.google.com/detail/fallen-london-favourites/jkaoljkdjoecocmlnncdljoeeijlcjao/reviews',
+    );
+  }
+
   // --- Import/Export ---
 
   const exportBtn = document.getElementById('exportBtn');

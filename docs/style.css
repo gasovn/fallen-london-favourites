@@ -225,6 +225,15 @@ p code, li code {
   color: #44403c;
 }
 
+.footer-review {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #78716c;
+}
+
+.footer-review a { color: #78716c; }
+.footer-review a:hover { color: #d4a843; }
+
 /* Sections content */
 .section p { margin-bottom: 12px; }
 .section ul, .section ol {

@@ -113,7 +113,6 @@ async function doCardToggle(
 
   applyState(cardId, nextState, faveData.card_faves, faveData.card_avoids);
   await saveFaves(toFaveSets(faveData));
-  parseCards(faveData);
 }
 
 function createCardToggleHandler(faveData: FaveData): (e: MouseEvent) => void {

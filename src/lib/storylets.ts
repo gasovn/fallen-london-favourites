@@ -82,7 +82,6 @@ async function doToggle(
 
   applyState(id, nextState, faves, avoids);
   await saveFaves(toFaveSets(faveData));
-  parseStorylets(faveData, false);
 }
 
 function makeToggleHandler(

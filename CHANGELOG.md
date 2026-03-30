@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3 — 2026-03-30
+
+- Branches and storylets no longer jump around when clicking the toggle ribbon — reordering only happens on page navigation
+
 ## 0.7.2 — 2026-02-28
 
 - Consistent 30x30 icons for hand cards on mobile instead of tiny 16x16

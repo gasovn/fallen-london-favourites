@@ -28,13 +28,17 @@ describe('detectVersion', () => {
     expect(detectVersion({ card_faves_keys: [] })).toBe(2);
   });
 
+  it('trusts an explicit v5 marker', () => {
+    expect(detectVersion({ storage_schema: 5 })).toBe(5);
+  });
+
   it('returns current version for empty data (fresh install)', () => {
     expect(detectVersion({})).toBe(STORAGE_SCHEMA_VERSION);
   });
 });
 
 describe('migrateData', () => {
-  it('migrates v2 raw dump to v4 in memory', () => {
+  it('migrates v2 raw dump to the current schema in memory', () => {
     const input: Record<string, unknown> = {
       storage_schema: 2,
       block_action: 'true',
@@ -73,7 +77,7 @@ describe('migrateData', () => {
 
   it('returns data unchanged when already at current version', () => {
     const input: Record<string, unknown> = {
-      storage_schema: 4,
+      storage_schema: 5,
       click_protection: 'shift',
       branch_faves_keys: ['branch_faves_0'],
       branch_faves_0: [101],
@@ -84,6 +88,29 @@ describe('migrateData', () => {
     const result = migrateData(input);
 
     expect(result).toEqual(input);
+  });
+
+  it('migrates v4 to v5 as a marker bump, carrying profile keys through untouched', () => {
+    const input: Record<string, unknown> = {
+      storage_schema: 4,
+      click_protection: 'shift',
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [101, 202],
+      card_faves_keys: [],
+      card_avoids_keys: [],
+      // a v5 client may already hold profile keys when it re-runs migrate on
+      // a v4-marked area pushed by an old client
+      'p:900001:branch_faves_keys': ['p:900001:branch_faves_0'],
+      'p:900001:branch_faves_0': [303],
+      'p:registry': { '900001': 'Jane Doe' },
+    };
+
+    const result = migrateData(input);
+
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
+    expect(unpackSet(result, 'branch_faves')).toEqual(new Set([101, 202]));
+    expect(unpackSet(result, 'p:900001:branch_faves')).toEqual(new Set([303]));
+    expect(result['p:registry']).toEqual({ '900001': 'Jane Doe' });
   });
 
   it('migrates v0 data through full chain', () => {
@@ -125,7 +152,7 @@ describe('migrate', () => {
     vi.clearAllMocks();
   });
 
-  describe('v0 -> v4', () => {
+  describe('v0 -> v5', () => {
     it('migrates v0 data through full chain', async () => {
       const storage = createMockStorage({
         storage_schema: 0,
@@ -137,7 +164,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('off');
       expect(result.block_action).toBeUndefined();
 
@@ -158,7 +185,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('off');
       expect(result.block_action).toBeUndefined();
 
@@ -171,8 +198,8 @@ describe('migrate', () => {
     });
   });
 
-  describe('v1 -> v4', () => {
-    it('migrates v1 arrays to v4 packed sets with renamed card keys', async () => {
+  describe('v1 -> v5', () => {
+    it('migrates v1 arrays to packed sets with renamed card keys', async () => {
       const storage = createMockStorage({
         storage_schema: 1,
         branch_fave_array: [101, 202],
@@ -186,7 +213,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('shift');
       expect(result.block_action).toBeUndefined();
 
@@ -213,7 +240,7 @@ describe('migrate', () => {
       expect(result.card_discards_keys).toBeUndefined();
     });
 
-    it('handles v1 without block_action (not stored, default applied at read time)', async () => {
+    it('handles v1 without block_action (migration stores click_protection "off")', async () => {
       const storage = createMockStorage({
         storage_schema: 1,
         branch_fave_array: [101],
@@ -223,7 +250,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('off');
       expect(result.block_action).toBeUndefined();
 
@@ -234,7 +261,7 @@ describe('migrate', () => {
     });
   });
 
-  describe('v2 -> v4', () => {
+  describe('v2 -> v5', () => {
     it('converts block_action "true" to click_protection "shift"', async () => {
       const storage = createMockStorage({
         storage_schema: 2,
@@ -251,7 +278,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('shift');
       expect(result.block_action).toBeUndefined();
     });
@@ -389,7 +416,7 @@ describe('migrate', () => {
     });
   });
 
-  describe('v3 -> v4', () => {
+  describe('v3 -> v5', () => {
     it('converts block_action true to click_protection "shift"', async () => {
       const storage = createMockStorage({
         storage_schema: 3,
@@ -404,7 +431,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('shift');
       expect(result.block_action).toBeUndefined();
     });
@@ -422,7 +449,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('off');
       expect(result.block_action).toBeUndefined();
     });
@@ -439,7 +466,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('off');
       expect(result.block_action).toBeUndefined();
     });
@@ -490,7 +517,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
       expect(result.click_protection).toBe('shift');
       expect(result.block_action).toBeUndefined();
 
@@ -524,7 +551,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
 
       const cardFaves = unpackSet(result, 'card_faves');
 
@@ -548,7 +575,7 @@ describe('migrate', () => {
 
       const result = storage._getData();
 
-      expect(result.storage_schema).toBe(4);
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
 
       const cardFaves = unpackSet(result, 'card_faves');
 
@@ -576,10 +603,32 @@ describe('migrate', () => {
     });
   });
 
-  describe('v4 -> v4 (no-op)', () => {
+  describe('v4 -> v5 (marker bump through migrate)', () => {
+    it('only rewrites the schema marker and leaves data in place', async () => {
+      const storage = createMockStorage({
+        storage_schema: 4,
+        click_protection: 'shift',
+        branch_faves_keys: ['branch_faves_0'],
+        branch_faves_0: [101],
+        card_faves_keys: ['card_faves_0'],
+        card_faves_0: [701],
+        card_avoids_keys: [],
+      });
+
+      await migrate(storage as unknown as Browser.storage.StorageArea);
+
+      const result = storage._getData();
+
+      expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
+      expect(unpackSet(result, 'branch_faves')).toEqual(new Set([101]));
+      expect(unpackSet(result, 'card_faves')).toEqual(new Set([701]));
+    });
+  });
+
+  describe('v5 -> v5 (no-op)', () => {
     it('does not modify already-migrated data', async () => {
       const originalData = {
-        storage_schema: 4,
+        storage_schema: 5,
         click_protection: 'shift',
         branch_faves_keys: ['branch_faves_0'],
         branch_faves_0: [101],

@@ -5,9 +5,12 @@ import {
   getCurrentState,
   applyState,
   saveFaves,
-  type FaveSets,
+  packTarget,
 } from '../toggle';
+import { unpackSet } from '../storage';
+import { emptySets } from '../profiles';
 import { createMockStorage } from '../../../tests/helpers/mock-storage';
+import type { FaveSets } from '@/types';
 
 describe('getCurrentState', () => {
   it('returns fave when id is in faves set', () => {
@@ -181,16 +184,32 @@ describe('saveFaves', () => {
     });
   });
 
-  function emptySets(): FaveSets {
-    return {
-      branch_faves: new Set(),
-      branch_avoids: new Set(),
-      storylet_faves: new Set(),
-      storylet_avoids: new Set(),
-      card_faves: new Set(),
-      card_avoids: new Set(),
-    };
-  }
+  it('writes the schema marker together with the first save', async () => {
+    await saveFaves({ ...emptySets(), storylet_faves: new Set([1]) });
+
+    expect(mockStorage._getData().storage_schema).toBe(5);
+  });
+
+  it('leaves an existing schema marker alone', async () => {
+    mockStorage = createMockStorage({ storage_schema: 6 });
+    vi.stubGlobal('browser', { storage: { local: mockStorage } });
+
+    await saveFaves({ ...emptySets(), storylet_faves: new Set([1]) });
+
+    expect(mockStorage._getData().storage_schema).toBe(6);
+  });
+
+  it('does not stamp the marker over legacy data that still awaits migration', async () => {
+    mockStorage = createMockStorage({
+      card_protects_keys: ['card_protects_0'],
+      card_protects_0: [7],
+    });
+    vi.stubGlobal('browser', { storage: { local: mockStorage } });
+
+    await saveFaves({ ...emptySets(), storylet_faves: new Set([1]) });
+
+    expect(mockStorage._getData()).not.toHaveProperty('storage_schema');
+  });
 
   it('removes orphaned chunks after save', async () => {
     mockStorage = createMockStorage({
@@ -242,7 +261,7 @@ describe('saveFaves', () => {
     expect(data).not.toHaveProperty('branch_faves_1');
   });
 
-  it('handles all 6 categories independently', async () => {
+  it('handles several categories independently', async () => {
     mockStorage = createMockStorage({
       branch_faves_keys: [],
       branch_faves_0: [100],
@@ -339,5 +358,121 @@ describe('saveFaves', () => {
     expect(data.branch_faves_0).toEqual([400]);
     expect(data).not.toHaveProperty('card_faves_0');
     expect(data.storylet_faves_0).toEqual([500, 600]);
+  });
+});
+
+describe('packTarget', () => {
+  it('packs into the flat default namespace', () => {
+    const sets = emptySets();
+
+    sets.branch_faves = new Set([1, 2]);
+
+    const data = packTarget(sets, { kind: 'default' });
+
+    expect(data.branch_faves_0).toEqual([1, 2]);
+    expect(data.branch_faves_keys).toEqual(['branch_faves_0']);
+  });
+
+  it('packs into a profile namespace', () => {
+    const sets = emptySets();
+
+    sets.branch_faves = new Set([1, 2]);
+
+    const data = packTarget(sets, { kind: 'profile', charId: '900001' });
+
+    expect(data['p:900001:branch_faves_0']).toEqual([1, 2]);
+    expect(data['p:900001:branch_faves_keys']).toEqual(['p:900001:branch_faves_0']);
+    expect(data).not.toHaveProperty('branch_faves_0');
+  });
+});
+
+function makeSets(overrides: Partial<FaveSets> = {}): FaveSets {
+  return { ...emptySets(), ...overrides };
+}
+
+describe('saveFaves to a profile', () => {
+  let mockLocal: ReturnType<typeof createMockStorage>;
+  let mockSync: ReturnType<typeof createMockStorage>;
+
+  function stub(
+    initialLocal: Record<string, unknown> = {},
+    initialSync: Record<string, unknown> = {},
+  ): void {
+    mockLocal = createMockStorage(initialLocal);
+    mockSync = createMockStorage(initialSync);
+    vi.stubGlobal('browser', { storage: { local: mockLocal, sync: mockSync } });
+  }
+
+  beforeEach(() => stub());
+
+  it('writes to the per-character namespace, leaving the flat default untouched', async () => {
+    stub(packTarget(makeSets({ branch_faves: new Set([111]) }), { kind: 'default' }));
+
+    await saveFaves(makeSets({ branch_faves: new Set([1, 2]) }), {
+      kind: 'profile',
+      charId: '900001',
+    });
+
+    const data = mockLocal._getData();
+
+    expect(unpackSet(data, 'p:900001:branch_faves')).toEqual(new Set([1, 2]));
+    expect(unpackSet(data, 'branch_faves')).toEqual(new Set([111]));
+  });
+
+  it('captures the character name into the registry', async () => {
+    await saveFaves(
+      makeSets({ card_faves: new Set([5]) }),
+      { kind: 'profile', charId: '900001' },
+      'Jane Doe',
+    );
+
+    expect(mockLocal._getData()['p:registry']).toEqual({ '900001': 'Jane Doe' });
+  });
+
+  it('does not write the registry again when the name is unchanged', async () => {
+    stub({ 'p:registry': { '900001': 'Jane Doe' } });
+
+    const setSpy = vi.fn(mockLocal.set);
+
+    mockLocal.set = setSpy;
+
+    await saveFaves(makeSets(), { kind: 'profile', charId: '900001' }, 'Jane Doe');
+
+    const registryWrites = setSpy.mock.calls.filter((call) => 'p:registry' in call[0]);
+
+    expect(registryWrites).toHaveLength(0);
+  });
+
+  it('does not capture a name on a default write', async () => {
+    await saveFaves(makeSets(), { kind: 'default' }, 'Jane Doe');
+
+    expect(mockLocal._getData()).not.toHaveProperty('p:registry');
+  });
+
+  it('removes a stale profile chunk from local only, leaving sync, other profiles and default alone', async () => {
+    stub(
+      {
+        'p:900001:branch_faves_keys': ['p:900001:branch_faves_0'],
+        'p:900001:branch_faves_0': [1],
+        'p:900001:branch_faves_1': [999], // stale — not in the registry
+        'p:1000002:branch_faves_keys': ['p:1000002:branch_faves_0'],
+        'p:1000002:branch_faves_0': [7],
+        ...packTarget(makeSets({ branch_faves: new Set([42]) }), { kind: 'default' }),
+      },
+      { 'p:900001:branch_faves_1': [999] },
+    );
+
+    await saveFaves(makeSets({ branch_faves: new Set([1]) }), {
+      kind: 'profile',
+      charId: '900001',
+    });
+
+    const local = mockLocal._getData();
+
+    expect(local).not.toHaveProperty('p:900001:branch_faves_1');
+    // Removed from sync only together with the registry that stops naming it.
+    expect(mockSync._getData()).toHaveProperty('p:900001:branch_faves_1');
+    expect(local['p:1000002:branch_faves_0']).toEqual([7]);
+    expect(unpackSet(local, 'branch_faves')).toEqual(new Set([42]));
   });
 });

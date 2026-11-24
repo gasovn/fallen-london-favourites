@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { findOrphanedChunks, findZombieKeys, cleanupStorage } from '../cleanup';
+import { detectVersion } from '../migration';
 import { createMockStorage } from '../../../tests/helpers/mock-storage';
 
 describe('findOrphanedChunks', () => {
@@ -235,7 +236,7 @@ describe('cleanupStorage', () => {
     expect(storage._getData()).toEqual(original);
   });
 
-  it('removes obsolete card_protects and card_discards chunks', async () => {
+  it('removes the obsolete card_protects chunk and both obsolete registries', async () => {
     const storage = createMockStorage({
       storage_schema: 4,
       card_protects_keys: [],
@@ -254,5 +255,64 @@ describe('cleanupStorage', () => {
     expect(data).not.toHaveProperty('card_discards_keys');
     expect(data).not.toHaveProperty('card_protects_0');
     expect(data).toHaveProperty('card_faves_0');
+  });
+});
+
+describe('the flat-key cleanup leaves profile keys alone, and the v5 marker keeps them from reading as v2', () => {
+  it('findOrphanedChunks never flags a profile chunk, even one without a registry', () => {
+    const data = {
+      // profile chunks with no registry
+      'p:900001:branch_faves_0': [100],
+      'p:900001:branch_faves_1': [200],
+      // the flat default really is orphaned
+      branch_faves_keys: [],
+      branch_faves_0: [300],
+    };
+
+    const orphans = findOrphanedChunks(data);
+
+    expect(orphans).toContain('branch_faves_0');
+    expect(orphans).not.toContain('p:900001:branch_faves_0');
+    expect(orphans).not.toContain('p:900001:branch_faves_1');
+  });
+
+  it('findZombieKeys never flags profile keys or the name registry', () => {
+    const data = {
+      'p:900001:branch_faves_keys': ['p:900001:branch_faves_0'],
+      'p:900001:branch_faves_0': [100],
+      'p:registry': { '900001': 'Jane' },
+    };
+
+    expect(findZombieKeys(data)).toEqual([]);
+  });
+
+  it('cleanupStorage leaves profile chunks and the registry untouched', async () => {
+    const storage = createMockStorage({
+      storage_schema: 5,
+      branch_faves_keys: ['branch_faves_0'],
+      branch_faves_0: [1],
+      'p:900001:branch_faves_keys': ['p:900001:branch_faves_0'],
+      'p:900001:branch_faves_0': [100],
+      'p:registry': { '900001': 'Jane' },
+    });
+
+    await cleanupStorage(storage);
+
+    const data = storage._getData();
+
+    expect(data['p:900001:branch_faves_0']).toEqual([100]);
+    expect(data['p:registry']).toEqual({ '900001': 'Jane' });
+  });
+
+  it('detectVersion trusts the v5 marker and is not fooled into v2 by a profile registry', () => {
+    const data = {
+      storage_schema: 5,
+      branch_faves_keys: [],
+      'p:900001:branch_faves_keys': ['p:900001:branch_faves_0'],
+      'p:900001:branch_faves_0': [100],
+      'p:registry': { '900001': 'Jane' },
+    };
+
+    expect(detectVersion(data)).toBe(5);
   });
 });

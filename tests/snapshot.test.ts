@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { migrate, detectVersion } from '@/lib/migration';
 import { unpackSet } from '@/lib/storage';
+import { STORAGE_SCHEMA_VERSION } from '@/types';
 import { createMockStorage, stubBrowserGlobal } from './helpers/mock-storage';
 import storageV0 from './fixtures/storage-v0.json';
 import storageV1 from './fixtures/storage-v1.json';
@@ -12,14 +13,14 @@ import storageV2Real from './fixtures/storage-v2-real.json';
 stubBrowserGlobal();
 
 describe('snapshot: v0 fixture migration', () => {
-  it('migrates v0 -> v4 preserving all branch IDs', async () => {
+  it('migrates v0 -> v5 preserving all branch IDs', async () => {
     const storage = createMockStorage(storageV0 as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(4);
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
 
     // branch_faves from v0 "branch_faves" array should be packed
     const branchFaves = unpackSet(result, 'branch_faves');
@@ -40,14 +41,14 @@ describe('snapshot: v0 fixture migration', () => {
 });
 
 describe('snapshot: v1 fixture migration', () => {
-  it('migrates v1 -> v4 preserving all data and renaming card keys', async () => {
+  it('migrates v1 -> v5 preserving all data and renaming card keys', async () => {
     const storage = createMockStorage(storageV1 as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(4);
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
 
     // All arrays migrated to packed sets
     const branchFaves = unpackSet(result, 'branch_faves');
@@ -78,14 +79,14 @@ describe('snapshot: v1 fixture migration', () => {
 });
 
 describe('snapshot: v2 fixture migration', () => {
-  it('migrates v2 -> v4 with all transformations', async () => {
+  it('migrates v2 -> v5 with all transformations', async () => {
     const storage = createMockStorage(storageV2 as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(4);
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
 
     // block_action: string "true" -> click_protection: 'shift'
     expect(result.click_protection).toBe('shift');
@@ -177,14 +178,14 @@ describe('snapshot: v2 fixture migration', () => {
 });
 
 describe('snapshot: v3 fixture migration', () => {
-  it('migrates v3 -> v4 converting block_action to click_protection', async () => {
+  it('migrates v3 -> v5 converting block_action to click_protection', async () => {
     const storage = createMockStorage(storageV3 as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(4);
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
 
     // block_action: true -> click_protection: 'shift'
     expect(result.click_protection).toBe('shift');
@@ -232,14 +233,14 @@ describe('snapshot: v3 fixture migration', () => {
 });
 
 describe('snapshot: legacy fixture migration', () => {
-  it('migrates legacy -> v4 preserving all data', async () => {
+  it('migrates legacy -> v5 preserving all data', async () => {
     const storage = createMockStorage(storageLegacy as Record<string, unknown>);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(4);
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
 
     // block_action converted from string "true" -> click_protection "shift"
     expect(result.click_protection).toBe('shift');
@@ -348,14 +349,14 @@ describe('snapshot: real v2 data from browser', () => {
     expect(typeof realData.block_action).toBe('string');
   });
 
-  it('migrates to v4 without errors', async () => {
+  it('migrates to v5 without errors', async () => {
     const storage = createMockStorage(realData);
 
     await migrate(storage as unknown as Browser.storage.StorageArea);
 
     const result = storage._getData();
 
-    expect(result.storage_schema).toBe(4);
+    expect(result.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
     expect(result.click_protection).toBe('shift');
     expect(result.block_action).toBeUndefined();
   });

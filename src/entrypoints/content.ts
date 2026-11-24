@@ -1,5 +1,12 @@
 import type { FaveData } from '@/types';
-import { getOptions, unpackSet, parseClickProtection } from '@/lib/storage';
+import { getOptions, parseClickProtection } from '@/lib/storage';
+import { resolveContext, renderSets } from '@/lib/profiles';
+import {
+  resolveCurrentIdentity,
+  shouldSignalDegradation,
+  shouldClearDegradation,
+} from '@/lib/identity';
+import { setDeviceFlag, JWT_DEGRADED_FLAG, DEV_PREFIX } from '@/lib/flags';
 import { parseStorylets, shiftHandler } from '@/lib/storylets';
 import { parseCards } from '@/lib/cards';
 import { protectAvoidClick } from '@/lib/protection';
@@ -25,6 +32,9 @@ export default defineContentScript({
         switch_mode: 'click_through',
         click_protection: 'off',
       },
+      loadedCharId: null,
+      readTarget: { kind: 'default' },
+      writeTarget: { kind: 'default' },
     };
 
     let wrapObserver: MutationObserver | null = null;
@@ -47,14 +57,18 @@ export default defineContentScript({
 
     async function loadData(): Promise<void> {
       const data = await getOptions();
+      const multi = data.multi_toggle === true;
+      const identity = resolveCurrentIdentity();
+      const context = resolveContext(multi, identity.charId, data);
+
+      if (shouldSignalDegradation(multi, identity)) {
+        await setDeviceFlag(JWT_DEGRADED_FLAG, true);
+      } else if (shouldClearDegradation(identity)) {
+        await setDeviceFlag(JWT_DEGRADED_FLAG, false);
+      }
 
       faveData = {
-        branch_faves: unpackSet(data, 'branch_faves'),
-        branch_avoids: unpackSet(data, 'branch_avoids'),
-        storylet_faves: unpackSet(data, 'storylet_faves'),
-        storylet_avoids: unpackSet(data, 'storylet_avoids'),
-        card_faves: unpackSet(data, 'card_faves'),
-        card_avoids: unpackSet(data, 'card_avoids'),
+        ...renderSets(data, context),
         options: {
           branch_reorder_mode:
             (data.branch_reorder_mode as FaveData['options']['branch_reorder_mode']) ??
@@ -62,6 +76,9 @@ export default defineContentScript({
           switch_mode: (data.switch_mode as FaveData['options']['switch_mode']) ?? 'click_through',
           click_protection: parseClickProtection(data.click_protection),
         },
+        loadedCharId: context.loadedCharId,
+        readTarget: context.readTarget,
+        writeTarget: context.writeTarget,
       };
     }
 
@@ -155,10 +172,12 @@ export default defineContentScript({
     }
 
     async function onStorageChange(
-      _changes: Record<string, Browser.storage.StorageChange>,
+      changes: Record<string, Browser.storage.StorageChange>,
       area: string,
     ): Promise<void> {
-      if (area === 'local') {
+      // Device flags change nothing on the page, and reloading on the notice
+      // being dismissed would raise it again at once.
+      if (area === 'local' && !Object.keys(changes).every((key) => key.startsWith(DEV_PREFIX))) {
         await loadData();
         doParse(false);
       }

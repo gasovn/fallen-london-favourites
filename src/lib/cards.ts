@@ -4,8 +4,7 @@ import {
   getCurrentState,
   getNextCardState,
   applyState,
-  saveFaves,
-  toFaveSets,
+  commitFaveChange,
   ICON_SUFFIX,
 } from '@/lib/toggle';
 import { isMobile, attachLongPressHandler } from '@/lib/platform';
@@ -108,11 +107,12 @@ async function doCardToggle(
   isModifier: boolean,
   faveData: FaveData,
 ): Promise<void> {
-  const currentState = getCurrentState(cardId, faveData.card_faves, faveData.card_avoids);
-  const nextState = getNextCardState(currentState, faveData.options.switch_mode, isModifier);
+  await commitFaveChange(faveData, (sets) => {
+    const currentState = getCurrentState(cardId, sets.card_faves, sets.card_avoids);
+    const nextState = getNextCardState(currentState, faveData.options.switch_mode, isModifier);
 
-  applyState(cardId, nextState, faveData.card_faves, faveData.card_avoids);
-  await saveFaves(toFaveSets(faveData));
+    applyState(cardId, nextState, sets.card_faves, sets.card_avoids);
+  });
 }
 
 function createCardToggleHandler(faveData: FaveData): (e: MouseEvent) => void {

@@ -33,7 +33,8 @@ export function detectVersion(raw: Record<string, unknown>): number {
 
 /**
  * Pure, synchronous migration of raw storage data to the current schema.
- * Takes a plain object, returns a new plain object at STORAGE_SCHEMA_VERSION.
+ * Takes a plain object and returns one at STORAGE_SCHEMA_VERSION: the input itself
+ * when it is already current, otherwise a new object.
  * Does NOT mutate the input — each step works on a shallow copy.
  * Throws on unknown versions (caller is responsible for error handling).
  */
@@ -149,7 +150,14 @@ export function migrateData(data: Record<string, unknown>): Record<string, unkno
 
       delete next.block_action;
 
-      next.storage_schema = STORAGE_SCHEMA_VERSION;
+      next.storage_schema = 4;
+
+      return migrateData(next);
+    }
+
+    case 4: {
+      // v4 -> v5: marker only, no data moves.
+      const next: Record<string, unknown> = { ...data, storage_schema: STORAGE_SCHEMA_VERSION };
 
       return migrateData(next);
     }

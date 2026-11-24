@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseStorylets } from '../storylets';
 import { isMobile } from '../platform';
+import { createMockStorage } from '../../../tests/helpers/mock-storage';
 import type { FaveData } from '@/types';
 
 vi.mock('../platform', async (importOriginal) => {
@@ -20,10 +21,24 @@ vi.stubGlobal('browser', {
   },
   storage: {
     local: {
+      get: vi.fn(() => Promise.resolve({})),
       set: vi.fn(() => Promise.resolve()),
+      remove: vi.fn(() => Promise.resolve()),
+    },
+    sync: {
+      get: vi.fn(() => Promise.resolve({})),
+      set: vi.fn(() => Promise.resolve()),
+      remove: vi.fn(() => Promise.resolve()),
     },
   },
 });
+
+// faveData is updated after commitFaveChange's awaited storage reads. Drain those.
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 10; i++) {
+    await Promise.resolve();
+  }
+}
 
 function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
   return {
@@ -38,6 +53,9 @@ function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
       switch_mode: 'click_through',
       click_protection: 'off',
     },
+    loadedCharId: null,
+    readTarget: { kind: 'default' },
+    writeTarget: { kind: 'default' },
     ...overrides,
   };
 }
@@ -51,8 +69,8 @@ function createStoryletElement(id: number, className: string): HTMLElement {
   const goButton = document.createElement('button');
 
   goButton.className = 'button--go';
-  // Make offsetParent non-null (jsdom returns null by default for detached elements,
-  // but we need to override the Protector check in processElements)
+  // A visible button has an offsetParent; processElements skips one whose
+  // offsetParent is null (the Protector check).
   Object.defineProperty(goButton, 'offsetParent', { value: document.body });
   el.appendChild(goButton);
 
@@ -274,7 +292,7 @@ describe('mobile long press on toggle button', () => {
     return event;
   }
 
-  it('long press sets avoid in modifier_click mode', () => {
+  it('long press sets avoid in modifier_click mode', async () => {
     const el = createStoryletElement(100, 'storylet');
 
     main.appendChild(el);
@@ -289,11 +307,12 @@ describe('mobile long press on toggle button', () => {
 
     toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     vi.advanceTimersByTime(500);
+    await flushMicrotasks();
 
     expect(data.storylet_avoids.has(100)).toBe(true);
   });
 
-  it('short press sets fave in modifier_click mode', () => {
+  it('short press sets fave in modifier_click mode', async () => {
     const el = createStoryletElement(100, 'storylet');
 
     main.appendChild(el);
@@ -308,11 +327,12 @@ describe('mobile long press on toggle button', () => {
 
     toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     toggleBtn.dispatchEvent(fakeTouchEvent('touchend'));
+    await flushMicrotasks();
 
     expect(data.storylet_faves.has(100)).toBe(true);
   });
 
-  it('does not attach touch handlers in click_through mode', () => {
+  it('does not attach touch handlers in click_through mode', async () => {
     const el = createStoryletElement(100, 'storylet');
 
     main.appendChild(el);
@@ -325,13 +345,14 @@ describe('mobile long press on toggle button', () => {
 
     toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     vi.advanceTimersByTime(500);
+    await flushMicrotasks();
 
     // No state change from touch — only click handler should work
     expect(data.storylet_faves.has(100)).toBe(false);
     expect(data.storylet_avoids.has(100)).toBe(false);
   });
 
-  it('touchmove beyond threshold cancels long press', () => {
+  it('touchmove beyond threshold cancels long press', async () => {
     const el = createStoryletElement(100, 'storylet');
 
     main.appendChild(el);
@@ -347,8 +368,60 @@ describe('mobile long press on toggle button', () => {
     toggleBtn.dispatchEvent(fakeTouchEvent('touchstart', 0, 0));
     toggleBtn.dispatchEvent(fakeTouchEvent('touchmove', 20, 0));
     vi.advanceTimersByTime(500);
+    await flushMicrotasks();
 
     expect(data.storylet_faves.has(100)).toBe(false);
     expect(data.storylet_avoids.has(100)).toBe(false);
+  });
+});
+
+describe('clicks saved through storage', () => {
+  const stubbed = browser;
+  let main: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    main = document.createElement('div');
+    main.id = 'main';
+    document.body.appendChild(main);
+    vi.mocked(isMobile).mockReturnValue(false);
+    vi.stubGlobal('browser', {
+      ...stubbed,
+      storage: { local: createMockStorage(), sync: createMockStorage() },
+    });
+  });
+
+  afterEach(() => {
+    vi.stubGlobal('browser', stubbed);
+  });
+
+  it('saves a click on a branch to the branch list', async () => {
+    main.appendChild(createStoryletElement(100, 'media--branch'));
+
+    const data = makeFaveData();
+
+    parseStorylets(data);
+
+    (main.querySelector('.fave_toggle_button') as HTMLInputElement).click();
+    await vi.waitFor(() => expect(data.branch_faves.has(100)).toBe(true));
+
+    expect(data.storylet_faves.has(100)).toBe(false);
+    expect(data.branch_avoids.has(100)).toBe(false);
+  });
+
+  it('two clicks before the first is saved step through two states, as separate clicks do', async () => {
+    main.appendChild(createStoryletElement(100, 'storylet'));
+
+    const data = makeFaveData();
+
+    parseStorylets(data);
+
+    const toggleBtn = main.querySelector('.fave_toggle_button') as HTMLInputElement;
+
+    toggleBtn.click();
+    toggleBtn.click();
+    await vi.waitFor(() => expect(data.storylet_avoids.has(100)).toBe(true));
+
+    expect(data.storylet_faves.has(100)).toBe(false);
   });
 });

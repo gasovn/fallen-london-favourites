@@ -1,11 +1,10 @@
-import type { FaveData, FaveState, ClickProtection } from '@/types';
+import type { FaveData, FaveSets, FaveState, ClickProtection } from '@/types';
 import type { PublicPath } from 'wxt/browser';
 import {
   getCurrentState,
   getNextState,
   applyState,
-  saveFaves,
-  toFaveSets,
+  commitFaveChange,
   ICON_SUFFIX,
 } from '@/lib/toggle';
 import { isMobile, attachLongPressHandler } from '@/lib/platform';
@@ -73,21 +72,24 @@ function createToggleButton(id: number, state: FaveState, isLocked: boolean): HT
 async function doToggle(
   id: number,
   isModifier: boolean,
-  faves: Set<number>,
-  avoids: Set<number>,
   faveData: FaveData,
+  favesKey: keyof FaveSets,
+  avoidsKey: keyof FaveSets,
 ): Promise<void> {
-  const currentState = getCurrentState(id, faves, avoids);
-  const nextState = getNextState(currentState, faveData.options.switch_mode, isModifier);
+  // The step is taken from the stored state, so a second click that arrives
+  // before the first is saved still moves one step further.
+  await commitFaveChange(faveData, (sets) => {
+    const currentState = getCurrentState(id, sets[favesKey], sets[avoidsKey]);
+    const nextState = getNextState(currentState, faveData.options.switch_mode, isModifier);
 
-  applyState(id, nextState, faves, avoids);
-  await saveFaves(toFaveSets(faveData));
+    applyState(id, nextState, sets[favesKey], sets[avoidsKey]);
+  });
 }
 
 function makeToggleHandler(
   faveData: FaveData,
-  faves: Set<number>,
-  avoids: Set<number>,
+  favesKey: keyof FaveSets,
+  avoidsKey: keyof FaveSets,
 ): (e: MouseEvent) => Promise<void> {
   return async (e: MouseEvent) => {
     e.preventDefault();
@@ -101,7 +103,7 @@ function makeToggleHandler(
 
     const isModifier = e.metaKey || e.ctrlKey;
 
-    await doToggle(id, isModifier, faves, avoids, faveData);
+    await doToggle(id, isModifier, faveData, favesKey, avoidsKey);
   };
 }
 
@@ -111,12 +113,14 @@ function makeToggleHandler(
 //     actions are insufficient), storylets use the first/only .button--go
 function processElements(
   elements: NodeListOf<HTMLElement>,
-  faves: Set<number>,
-  avoids: Set<number>,
+  favesKey: keyof FaveSets,
+  avoidsKey: keyof FaveSets,
   faveData: FaveData,
   useLast: boolean,
 ): void {
-  const toggleHandler = makeToggleHandler(faveData, faves, avoids);
+  const faves = faveData[favesKey];
+  const avoids = faveData[avoidsKey];
+  const toggleHandler = makeToggleHandler(faveData, favesKey, avoidsKey);
 
   elements.forEach((el) => {
     const match = el.dataset.branchId;
@@ -159,8 +163,8 @@ function processElements(
     if (isMobile() && faveData.options.switch_mode === 'modifier_click') {
       attachLongPressHandler(
         toggleButton,
-        () => doToggle(id, false, faves, avoids, faveData),
-        () => doToggle(id, true, faves, avoids, faveData),
+        () => doToggle(id, false, faveData, favesKey, avoidsKey),
+        () => doToggle(id, true, faveData, favesKey, avoidsKey),
       );
     }
 
@@ -275,17 +279,17 @@ export function parseStorylets(faveData: FaveData, reorder: boolean = false): vo
   }
 
   if (branches.length) {
-    processElements(branches, faveData.branch_faves, faveData.branch_avoids, faveData, true);
+    processElements(branches, 'branch_faves', 'branch_avoids', faveData, true);
     reorderElements(branches, reorderActive, reorderLocked);
   } else if (storylets.length) {
-    processElements(storylets, faveData.storylet_faves, faveData.storylet_avoids, faveData, false);
+    processElements(storylets, 'storylet_faves', 'storylet_avoids', faveData, false);
     reorderElements(storylets, reorderActive, reorderLocked);
   }
 
   // Persistent storylets (Fifth City Stories) are processed separately
   // so reordering stays within the disclosure container
   if (persistent.length) {
-    processElements(persistent, faveData.storylet_faves, faveData.storylet_avoids, faveData, false);
+    processElements(persistent, 'storylet_faves', 'storylet_avoids', faveData, false);
     reorderElements(persistent, reorderActive, reorderLocked);
   }
 }

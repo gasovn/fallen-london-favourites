@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Browser } from 'wxt/browser';
-import { validateImport, exportData, importData, convertRawDump } from '../io';
+import {
+  validateImport,
+  exportData,
+  importData,
+  convertRawDump,
+  SyncQuotaExceededError,
+} from '../io';
 import { packSet, unpackSet } from '../storage';
 import { cleanupStorage } from '../cleanup';
 import { migrate } from '../migration';
@@ -10,17 +16,22 @@ import {
   EXPORT_VERSION,
   DEFAULT_OPTIONS,
   STORAGE_SCHEMA_VERSION,
+  type ExportData,
   type ExportFile,
 } from '@/types';
 
 const mockGet = vi.fn<() => Promise<Record<string, unknown>>>();
 const mockSet = vi.fn<(items: Record<string, unknown>) => Promise<void>>();
 const mockClear = vi.fn<() => Promise<void>>();
+const mockRemove = vi.fn<(keys: string[]) => Promise<void>>(() => Promise.resolve());
+const mockSyncGet = vi.fn<() => Promise<Record<string, unknown>>>(() => Promise.resolve({}));
+const mockSyncRemove = vi.fn<(keys: string[]) => Promise<void>>(() => Promise.resolve());
 
 vi.stubGlobal('browser', {
   runtime: { requestUpdateCheck: vi.fn() },
   storage: {
-    local: { get: mockGet, set: mockSet, clear: mockClear },
+    local: { get: mockGet, set: mockSet, clear: mockClear, remove: mockRemove },
+    sync: { get: mockSyncGet, remove: mockSyncRemove },
   },
 });
 
@@ -148,6 +159,29 @@ describe('validateImport', () => {
       const result = validateImport(validExport({ version: 1 }));
 
       expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('profiles and names', () => {
+    it('rejects a profile whose character id is not a number', () => {
+      const result = validateImport(validExport({ profiles: { abc: validExport().data } }));
+
+      expect(result.valid).toBe(false);
+    });
+
+    it('rejects a profile whose favourites are not lists of numbers', () => {
+      const broken = { ...validExport().data, branch_faves: ['12'] };
+      const result = validateImport(validExport({ profiles: { '900001': broken } }));
+
+      expect(result.valid).toBe(false);
+    });
+
+    it('keeps only character names filed under a numeric id', () => {
+      const result = validateImport(
+        validExport({ registry: { '900001': 'Jane', abc: 'x', '1000002': { a: 1 } } }),
+      );
+
+      expect(result.valid && result.data.registry).toEqual({ '900001': 'Jane' });
     });
   });
 
@@ -327,7 +361,7 @@ describe('exportData', () => {
     const result = await exportData();
 
     expect(result.format).toBe('fallen-london-favourites');
-    expect(result.version).toBe(2);
+    expect(result.version).toBe(EXPORT_VERSION);
     expect(typeof result.exported_at).toBe('string');
     expect(result.data).toEqual({
       branch_faves: [101, 202],
@@ -389,14 +423,15 @@ describe('exportData', () => {
 describe('importData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGet.mockResolvedValue({});
+    mockSyncGet.mockResolvedValue({});
   });
 
-  it('clears storage and writes packed data with options', async () => {
+  it('writes packed data with options', async () => {
     const input = validExport();
 
     await importData(input);
 
-    expect(mockClear).toHaveBeenCalledOnce();
     expect(mockSet).toHaveBeenCalledOnce();
 
     const written = mockSet.mock.calls[0][0];
@@ -409,25 +444,6 @@ describe('importData', () => {
     const branchFaves = unpackSet(written, 'branch_faves');
 
     expect(branchFaves).toEqual(new Set([101, 202]));
-  });
-
-  it('calls clear before set', async () => {
-    const callOrder: string[] = [];
-
-    mockClear.mockImplementation(() => {
-      callOrder.push('clear');
-
-      return Promise.resolve();
-    });
-    mockSet.mockImplementation(() => {
-      callOrder.push('set');
-
-      return Promise.resolve();
-    });
-
-    await importData(validExport());
-
-    expect(callOrder).toEqual(['clear', 'set']);
   });
 });
 
@@ -662,8 +678,10 @@ function useStatefulMocks(initial: Record<string, unknown>): void {
 
     return Promise.resolve();
   });
-  mockClear.mockImplementation(() => {
-    storage = {};
+  mockRemove.mockImplementation((keys) => {
+    for (const key of keys) {
+      delete storage[key];
+    }
 
     return Promise.resolve();
   });
@@ -742,7 +760,7 @@ describe('round-trip: export → import → export', () => {
     expect(exported1.data.branch_faves).toEqual([]);
   });
 
-  it('v1 import then export produces v2 format without block_action', async () => {
+  it('v1 import then export produces the current format without block_action', async () => {
     useStatefulMocks({});
 
     const v1File = validExport({
@@ -816,7 +834,7 @@ describe('round-trip: raw dump → import → export', () => {
 });
 
 describe('cleanup integration', () => {
-  it('saveFaves then loadData preserves all data', async () => {
+  it('cleanupStorage keeps every chunk a registry names', async () => {
     const storage = createMockStorage();
     const data: Record<string, unknown> = {};
 
@@ -865,5 +883,256 @@ describe('cleanup integration', () => {
     // Data preserved
     expect(unpackSet(data, 'branch_faves')).toEqual(new Set([101]));
     expect(unpackSet(data, 'card_faves')).toEqual(new Set([701]));
+  });
+});
+
+const EMPTY_DATA: ExportData = {
+  branch_faves: [],
+  branch_avoids: [],
+  storylet_faves: [],
+  storylet_avoids: [],
+  card_faves: [],
+  card_avoids: [],
+};
+
+const IMPORT_OPTIONS = {
+  branch_reorder_mode: 'branch_reorder_active' as const,
+  switch_mode: 'click_through' as const,
+  click_protection: 'off' as const,
+};
+
+describe('profiles in export/import', () => {
+  let local: ReturnType<typeof createMockStorage>;
+  let sync: ReturnType<typeof createMockStorage>;
+
+  function stub(
+    localInit: Record<string, unknown> = {},
+    syncInit: Record<string, unknown> = {},
+  ): void {
+    local = createMockStorage(localInit);
+    sync = createMockStorage(syncInit);
+    vi.stubGlobal('browser', {
+      runtime: { requestUpdateCheck: vi.fn() },
+      storage: { local, sync },
+    });
+  }
+
+  it('exports the flat default, every profile, and the name registry', async () => {
+    stub({
+      storage_schema: STORAGE_SCHEMA_VERSION,
+      ...packSet(new Set([1]), 'branch_faves'),
+      ...packSet(new Set([10]), 'p:900001:branch_faves'),
+      ...packSet(new Set([20]), 'p:1000002:branch_faves'),
+      'p:registry': { '900001': 'Jane', '1000002': 'Mary' },
+    });
+
+    const exported = await exportData();
+
+    expect(exported.version).toBe(EXPORT_VERSION);
+    expect(exported.data.branch_faves).toEqual([1]);
+    expect(exported.profiles?.['900001']?.branch_faves).toEqual([10]);
+    expect(exported.profiles?.['1000002']?.branch_faves).toEqual([20]);
+    expect(exported.registry).toEqual({ '900001': 'Jane', '1000002': 'Mary' });
+  });
+
+  it('round-trips profiles through export → import → export', async () => {
+    stub({
+      storage_schema: STORAGE_SCHEMA_VERSION,
+      ...packSet(new Set([1]), 'branch_faves'),
+      ...packSet(new Set([10]), 'p:900001:branch_faves'),
+      'p:registry': { '900001': 'Jane' },
+    });
+
+    const exported1 = await exportData();
+
+    await importData(exported1);
+
+    const exported2 = await exportData();
+
+    expect({ ...exported2, exported_at: '' }).toEqual({ ...exported1, exported_at: '' });
+  });
+
+  it('discards a profile absent from the backup, but never the shared flat keys', async () => {
+    stub(
+      { storage_schema: STORAGE_SCHEMA_VERSION, ...packSet(new Set([1]), 'branch_faves') },
+      {
+        storage_schema: STORAGE_SCHEMA_VERSION,
+        ...packSet(new Set([1]), 'branch_faves'),
+        ...packSet(new Set([10]), 'p:900001:branch_faves'),
+        ...packSet(new Set([20]), 'p:1000002:branch_faves'),
+      },
+    );
+
+    await importData({
+      format: EXPORT_FORMAT,
+      version: EXPORT_VERSION,
+      exported_at: '',
+      data: { ...EMPTY_DATA, branch_faves: [1] },
+      options: IMPORT_OPTIONS,
+      profiles: { '900001': { ...EMPTY_DATA, branch_faves: [10] } },
+      registry: { '900001': 'Jane' },
+    });
+
+    const syncData = sync._getData();
+
+    expect(syncData).not.toHaveProperty('p:1000002:branch_faves_keys');
+    expect(syncData).not.toHaveProperty('p:1000002:branch_faves_0');
+    expect(syncData['p:900001:branch_faves_0']).toEqual([10]);
+    expect(syncData.branch_faves_0).toEqual([1]);
+    expect(syncData.storage_schema).toBe(STORAGE_SCHEMA_VERSION);
+  });
+
+  it('replaces the data without ever leaving the store empty', async () => {
+    stub({
+      storage_schema: STORAGE_SCHEMA_VERSION,
+      multi_toggle: true,
+      ...packSet(new Set([9]), 'storylet_faves'),
+      ...packSet(new Set([20]), 'p:1000002:branch_faves'),
+    });
+
+    const sizes: number[] = [];
+    const record = <T>(call: Promise<T>): Promise<T> =>
+      call.then((result) => {
+        sizes.push(Object.keys(local._getData()).length);
+
+        return result;
+      });
+    const realSet = local.set.bind(local);
+    const realRemove = local.remove.bind(local);
+    const realClear = local.clear.bind(local);
+
+    local.set = ((items: Record<string, unknown>) => record(realSet(items))) as typeof local.set;
+    local.remove = ((keys: string | string[]) => record(realRemove(keys))) as typeof local.remove;
+    local.clear = (() => record(realClear())) as typeof local.clear;
+
+    await importData({
+      format: EXPORT_FORMAT,
+      version: EXPORT_VERSION,
+      exported_at: '',
+      data: { ...EMPTY_DATA, branch_faves: [1] },
+      options: IMPORT_OPTIONS,
+      profiles: { '900001': { ...EMPTY_DATA, branch_faves: [10] } },
+      registry: {},
+    });
+
+    const data = local._getData();
+
+    expect(sizes.every((size) => size > 0)).toBe(true);
+    expect(Object.keys(data).filter((key) => key.startsWith('p:1000002:'))).toEqual([]);
+    expect(unpackSet(data, 'branch_faves')).toEqual(new Set([1]));
+    expect(unpackSet(data, 'storylet_faves')).toEqual(new Set());
+    expect(unpackSet(data, 'p:900001:branch_faves')).toEqual(new Set([10]));
+    expect(data.multi_toggle).toBe(true);
+  });
+
+  it('an old flat-only backup discards all profiles', async () => {
+    stub(
+      {},
+      {
+        storage_schema: STORAGE_SCHEMA_VERSION,
+        ...packSet(new Set([10]), 'p:900001:branch_faves'),
+      },
+    );
+
+    await importData({
+      format: EXPORT_FORMAT,
+      version: 2,
+      exported_at: '',
+      data: EMPTY_DATA,
+      options: IMPORT_OPTIONS,
+    });
+
+    expect(sync._getData()).not.toHaveProperty('p:900001:branch_faves_keys');
+  });
+
+  it('carries profiles through a raw storage dump', () => {
+    const dump = {
+      storage_schema: STORAGE_SCHEMA_VERSION,
+      ...packSet(new Set([1]), 'branch_faves'),
+      branch_avoids_keys: [],
+      storylet_faves_keys: [],
+      storylet_avoids_keys: [],
+      card_faves_keys: [],
+      card_avoids_keys: [],
+      ...packSet(new Set([10]), 'p:900001:branch_faves'),
+      'p:registry': { '900001': 'Jane' },
+    };
+
+    const result = validateImport(dump);
+
+    expect(result.valid).toBe(true);
+
+    if (result.valid) {
+      expect(result.data.profiles?.['900001']?.branch_faves).toEqual([10]);
+      expect(result.data.registry).toEqual({ '900001': 'Jane' });
+    }
+  });
+
+  it('refuses a backup that would overflow the sync quota', async () => {
+    stub();
+
+    const profiles: Record<string, ExportData> = {};
+
+    for (let i = 0; i < 80; i++) {
+      profiles[String(1000000 + i)] = { ...EMPTY_DATA, branch_faves: [i] };
+    }
+
+    await expect(
+      importData({
+        format: EXPORT_FORMAT,
+        version: EXPORT_VERSION,
+        exported_at: '',
+        data: EMPTY_DATA,
+        options: IMPORT_OPTIONS,
+        profiles,
+        registry: {},
+      }),
+    ).rejects.toBeInstanceOf(SyncQuotaExceededError);
+
+    expect(local._getData()).toEqual({});
+  });
+
+  it('restores a backup over the quota when the device already holds more', async () => {
+    const held: Record<string, unknown> = {};
+    const profiles: Record<string, ExportData> = {};
+
+    for (let i = 0; i < 90; i++) {
+      Object.assign(held, packSet(new Set([i]), `p:${1000000 + i}:branch_faves`));
+
+      for (let filler = 0; filler < 5; filler++) {
+        held[`p:${1000000 + i}:filler_${filler}`] = [];
+      }
+    }
+
+    for (let i = 0; i < 80; i++) {
+      profiles[String(1000000 + i)] = { ...EMPTY_DATA, branch_faves: [i] };
+    }
+
+    stub(held);
+
+    await importData({
+      format: EXPORT_FORMAT,
+      version: EXPORT_VERSION,
+      exported_at: '',
+      data: EMPTY_DATA,
+      options: IMPORT_OPTIONS,
+      profiles,
+      registry: {},
+    });
+
+    expect(local._getData()['p:1000079:branch_faves_0']).toEqual([79]);
+    expect(local._getData()).not.toHaveProperty('p:1000089:branch_faves_0');
+  });
+
+  it('rejects a newer-format backup on an older client', () => {
+    const result = validateImport({
+      format: EXPORT_FORMAT,
+      version: EXPORT_VERSION + 1,
+      exported_at: '',
+      data: EMPTY_DATA,
+      options: IMPORT_OPTIONS,
+    });
+
+    expect(result.valid).toBe(false);
   });
 });

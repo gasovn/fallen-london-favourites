@@ -4,6 +4,7 @@ const CHUNK_CATEGORIES = [...DATA_KEYS, 'card_protects', 'card_discards'] as con
 
 /**
  * Find orphaned _N chunk keys not referenced by their _keys registry.
+ * Flat keys only: profile chunks (p:<charId>:...) are not matched.
  * Pure function — does not touch storage.
  */
 export function findOrphanedChunks(data: Record<string, unknown>): string[] {
@@ -51,7 +52,7 @@ interface StorageArea {
 }
 
 /**
- * Remove orphaned chunks and zombie keys from a storage area.
+ * Remove orphaned flat-key chunks and zombie keys from a storage area.
  * Safe to call on both storage.local and storage.sync.
  */
 export async function cleanupStorage(storage: StorageArea): Promise<void> {

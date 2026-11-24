@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseCards } from '../cards';
 import { isMobile } from '../platform';
+import { createMockStorage } from '../../../tests/helpers/mock-storage';
 import type { FaveData } from '@/types';
 
 vi.mock('../platform', async (importOriginal) => {
@@ -19,10 +20,24 @@ vi.stubGlobal('browser', {
   },
   storage: {
     local: {
+      get: vi.fn(() => Promise.resolve({})),
       set: vi.fn(() => Promise.resolve()),
+      remove: vi.fn(() => Promise.resolve()),
+    },
+    sync: {
+      get: vi.fn(() => Promise.resolve({})),
+      set: vi.fn(() => Promise.resolve()),
+      remove: vi.fn(() => Promise.resolve()),
     },
   },
 });
+
+// faveData is updated after commitFaveChange's awaited storage reads. Drain those.
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 10; i++) {
+    await Promise.resolve();
+  }
+}
 
 function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
   return {
@@ -37,6 +52,9 @@ function makeFaveData(overrides: Partial<FaveData> = {}): FaveData {
       switch_mode: 'click_through',
       click_protection: 'off',
     },
+    loadedCharId: null,
+    readTarget: { kind: 'default' },
+    writeTarget: { kind: 'default' },
     ...overrides,
   };
 }
@@ -351,7 +369,7 @@ describe('mobile long press on card toggle', () => {
     return event;
   }
 
-  it('long press sets avoid in modifier_click mode', () => {
+  it('long press sets avoid in modifier_click mode', async () => {
     main.appendChild(createHandCard(100));
 
     const data = makeFaveData({
@@ -364,11 +382,12 @@ describe('mobile long press on card toggle', () => {
 
     toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     vi.advanceTimersByTime(500);
+    await flushMicrotasks();
 
     expect(data.card_avoids.has(100)).toBe(true);
   });
 
-  it('short press sets fave in modifier_click mode', () => {
+  it('short press sets fave in modifier_click mode', async () => {
     main.appendChild(createHandCard(100));
 
     const data = makeFaveData({
@@ -381,11 +400,12 @@ describe('mobile long press on card toggle', () => {
 
     toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     toggleBtn.dispatchEvent(fakeTouchEvent('touchend'));
+    await flushMicrotasks();
 
     expect(data.card_faves.has(100)).toBe(true);
   });
 
-  it('does not attach touch handlers in click_through mode', () => {
+  it('does not attach touch handlers in click_through mode', async () => {
     main.appendChild(createHandCard(100));
 
     const data = makeFaveData(); // click_through by default
@@ -396,8 +416,46 @@ describe('mobile long press on card toggle', () => {
 
     toggleBtn.dispatchEvent(fakeTouchEvent('touchstart'));
     vi.advanceTimersByTime(500);
+    await flushMicrotasks();
 
     expect(data.card_faves.has(100)).toBe(false);
     expect(data.card_avoids.has(100)).toBe(false);
+  });
+});
+
+describe('two clicks on one toggle before the first is saved', () => {
+  const stubbed = browser;
+  let main: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    main = document.createElement('div');
+    main.id = 'main';
+    document.body.appendChild(main);
+    vi.mocked(isMobile).mockReturnValue(false);
+    vi.stubGlobal('browser', {
+      ...stubbed,
+      storage: { local: createMockStorage(), sync: createMockStorage() },
+    });
+  });
+
+  afterEach(() => {
+    vi.stubGlobal('browser', stubbed);
+  });
+
+  it('steps through two states, as two separate clicks do', async () => {
+    main.appendChild(createHandCard(100));
+
+    const data = makeFaveData();
+
+    parseCards(data);
+
+    const toggleBtn = main.querySelector('.card_toggle_button') as HTMLInputElement;
+
+    toggleBtn.click();
+    toggleBtn.click();
+    await vi.waitFor(() => expect(data.card_avoids.has(100)).toBe(true));
+
+    expect(data.card_faves.has(100)).toBe(false);
   });
 });

@@ -27,7 +27,7 @@ export default defineConfig({
         strict_min_version: '142.0',
       },
     },
-    permissions: ['storage', 'unlimitedStorage'],
+    permissions: ['storage'],
     host_permissions: ['*://*.fallenlondon.com/*'],
     web_accessible_resources: [
       {

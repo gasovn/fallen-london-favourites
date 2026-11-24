@@ -78,18 +78,19 @@ export interface EventfulBrowserStub {
   local: MockStorage;
   sync: MockStorage;
   browserStub: Record<string, unknown>;
-  listeners: OnChangedListener[];
 }
 
 /**
  * Storage areas that dispatch browser.storage.onChanged like the real API:
- * events fire asynchronously (microtask), only for keys whose value actually
- * changed, and reach the writing context too — the property the sync-echo
- * races depend on.
+ * events fire asynchronously (microtask) and reach the writing context too —
+ * the property the sync-echo races depend on. Chrome reports only keys whose
+ * value changed; Firefox reports every key that was set, which
+ * `reportUnchanged` reproduces.
  */
 export function createEventfulBrowser(
   initialLocal: Record<string, unknown> = {},
   initialSync: Record<string, unknown> = {},
+  { reportUnchanged = false }: { reportUnchanged?: boolean } = {},
 ): EventfulBrowserStub {
   const listeners: OnChangedListener[] = [];
 
@@ -112,7 +113,7 @@ export function createEventfulBrowser(
       const changes: Record<string, StorageChange> = {};
 
       for (const [k, v] of Object.entries(items)) {
-        if (!(k in before) || JSON.stringify(before[k]) !== JSON.stringify(v)) {
+        if (reportUnchanged || !(k in before) || JSON.stringify(before[k]) !== JSON.stringify(v)) {
           changes[k] = { oldValue: before[k], newValue: v };
         }
       }
@@ -160,16 +161,9 @@ export function createEventfulBrowser(
         addListener: (listener: OnChangedListener) => {
           listeners.push(listener);
         },
-        removeListener: (listener: OnChangedListener) => {
-          const index = listeners.indexOf(listener);
-
-          if (index >= 0) {
-            listeners.splice(index, 1);
-          }
-        },
       },
     },
   };
 
-  return { local, sync, browserStub, listeners };
+  return { local, sync, browserStub };
 }

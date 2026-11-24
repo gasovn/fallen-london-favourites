@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 — 2026-11-24
+
+- Per-character favourites, off by default: each character gets its own favourites and avoids
+- Characters without a profile use the shared list, or start empty with "Start new profiles empty"
+- Character profiles can be deleted on the Options page; turning the feature off keeps the chosen character's favourites as the shared list
+- Export and import include character profiles and names
+- Notice on the Options page when sync storage is full; a mark that would not fit is not saved
+- No longer requests the unlimitedStorage permission
+- Fix click protection resetting to off after the first favourite on a new install
+- Fix Firefox re-syncing every few seconds after any change
+- Fix a double click on Confirm import running the import twice
+
 ## 0.7.3 — 2026-03-30
 
 - Branches and storylets no longer jump around when clicking the toggle ribbon — reordering only happens on page navigation

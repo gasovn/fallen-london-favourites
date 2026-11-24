@@ -3,6 +3,9 @@ import pkg from './package.json';
 
 export default defineConfig({
   srcDir: 'src',
+  zip: {
+    excludeSources: ['private/**'],
+  },
   manifest: {
     name: 'Fallen London Favourites',
     short_name: 'Fallen London Favourites',

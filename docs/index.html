@@ -24,6 +24,7 @@
     <nav class="site-nav">
       <a href="#about">About</a>
       <a href="#settings">Settings</a>
+      <a href="#characters">Characters</a>
       <a href="#import-export">Import / Export</a>
       <a href="#migration">Migration</a>
     </nav>
@@ -103,7 +104,7 @@
 
     <figure class="screenshot-figure" style="text-align: center;">
       <img class="screenshot" src="img/options.png"
-           alt="Options page with reordering, click mode, and click protection settings"
+           alt="Options page with reordering, click mode, click protection and per-character favourites settings"
            style="max-width: 480px; margin: 16px auto;">
       <figcaption>Options page</figcaption>
     </figure>
@@ -155,6 +156,78 @@
     </ul>
   </section>
 
+  <section id="characters" class="section">
+    <h2>Per-character favourites</h2>
+    <p>
+      If you play several characters, for example in Firefox container tabs, each one
+      can keep its own favourites. The feature is off by default and is set up on the
+      Options page.
+    </p>
+
+    <h3>Turning it on</h3>
+    <p>
+      Check <strong>Enable per-character favourites</strong>. Your current favourites
+      stay as the shared list, and profiles saved earlier, from an import or another
+      device, are used for their characters. <strong>Enable per-character
+      favourites</strong>, <strong>Start new profiles empty</strong> and the character
+      profiles sync like your favourites (see <a href="#cross-device-sync">Cross-device sync</a>).
+    </p>
+
+    <figure class="screenshot-figure" style="text-align: center;">
+      <img class="screenshot" src="img/characters.png"
+           alt="Per-character favourites settings with two saved character profiles"
+           style="max-width: 480px; margin: 16px auto;">
+      <figcaption>Per-character favourites with two saved profiles</figcaption>
+    </figure>
+    <ul>
+      <li>Each tab follows the character you are logged in as in that tab.</li>
+      <li>A character without a profile shows the shared favourites. The first time you
+          mark something as that character, it gets its own profile, copied from the
+          shared list. Its later changes go to that profile only.</li>
+      <li>If the extension can't tell which character is logged in, the page shows no
+          favourites or avoided marks and the toggle buttons don't save anything. Click
+          protection does not apply.</li>
+      <li>If the only login token the game stored can't be read (Fallen London may have
+          changed), the Options page shows a notice; turn the feature off to go back to
+          one shared list.</li>
+    </ul>
+
+    <h3>Start new profiles empty</h3>
+    <p>
+      With this option checked, a character without a profile shows no favourites or
+      avoided marks, and its first mark starts an empty profile instead of a copy of the
+      shared list.
+    </p>
+
+    <h3>Character profiles</h3>
+    <p>
+      The Options page lists saved profiles by character name, or by character number
+      while the name is unknown. A name is saved when that character marks something
+      with the feature on, or arrives with an import or from another device.
+      To delete a profile, click <strong>Delete</strong> and confirm. That character's
+      favourites are removed, and it shows the shared list again (or nothing, with
+      <strong>Start new profiles empty</strong>) until you mark something while logged in as
+      that character.
+    </p>
+    <p>
+      While the feature is off, the list shows profiles that arrived from an import or
+      another device. They are kept but not used.
+    </p>
+
+    <h3>Turning it off</h3>
+    <p>
+      Uncheck the box, choose the character whose favourites become your shared list,
+      and click <strong>Turn off and keep selected</strong>. All character profiles are
+      deleted, the chosen one included. If no character has a profile yet, the feature
+      turns off straight away and the shared list stays as it was.
+    </p>
+
+    <div class="callout">
+      <strong>Heads up:</strong> export first if you want to keep a backup of every
+      character's favourites.
+    </div>
+  </section>
+
   <section id="import-export" class="section">
     <h2>Import &amp; Export</h2>
     <p>
@@ -164,16 +237,21 @@
 
     <h3>Export</h3>
     <p>
-      Click <strong>Export</strong> to download a JSON file with all your favourites
-      and current settings. Keep it as a backup or use it to transfer data to
+      Click <strong>Export</strong> to download a JSON file with all your favourites,
+      character profiles with your characters' names, and the reordering, click mode and
+      click protection settings. Keep it as a backup or use it to transfer data to
       another browser.
     </p>
 
     <h3>Import</h3>
     <p>
       Click <strong>Import</strong> and select a previously exported JSON file.
-      You'll see a summary of what's in the file — how many favourites and avoids
-      for each category — before confirming.
+      You'll see a summary of what's in the file — how many shared favourites and avoids
+      for each category and how many character profiles — before confirming.
+      <strong>Enable per-character favourites</strong> and <strong>Start new profiles
+      empty</strong> are not in the file; importing leaves them as they are.
+      If the file has character profiles and the feature is off, the summary offers to
+      turn it on.
     </p>
 
     <figure class="screenshot-figure" style="text-align: center;">
@@ -184,15 +262,62 @@
     </figure>
 
     <div class="callout">
-      <strong>Heads up:</strong> importing replaces all your current favourites and
-      settings. Export first if you want to keep a backup.
+      <strong>Heads up:</strong> importing replaces all your current favourites,
+      character profiles and the reordering, click mode and click protection settings.
+      A backup with no character profiles deletes the profiles you have. Export first
+      if you want to keep a backup.
     </div>
 
-    <h3>Cross-device sync</h3>
+    <h3 id="cross-device-sync">Cross-device sync</h3>
     <p>
-      If you're signed into Chrome Sync or Firefox Account, your favourites and
-      settings sync automatically. No need to export and import manually — changes
-      appear on all your devices.
+      If you're signed into Chrome Sync or Firefox Account, your favourites, character
+      profiles and settings sync automatically. No need to export and import
+      manually — changes appear on your other signed-in devices.
+    </p>
+    <p>
+      Deleting a profile, turning per-character favourites off, or importing a backup
+      without that profile removes it on this device and from sync. Your other
+      signed-in devices keep their copy and sync it back here the next time you mark
+      something or change a setting on them. Delete it on each device, and here again
+      if it comes back.
+    </p>
+    <p>
+      If a mark or a settings change is made on another device in the few seconds
+      before it receives the turn-off, turning per-character favourites off is undone:
+      the feature comes back on with the old shared list and the profiles. Turn it off
+      again.
+    </p>
+    <p>
+      A mark made while favourites are still arriving from another device is not saved;
+      mark it again a moment later.
+    </p>
+    <p>
+      A device with an older version of the extension ignores per-character
+      favourites: it shows and edits the shared list. An older version also refuses
+      backups exported by this one. Update the extension on every device where you
+      play.
+    </p>
+    <p>
+      Firefox for Android doesn't sync extension data with your account: favourites
+      stay on that device. Use Export and Import to move them.
+    </p>
+
+    <h3>Sync storage full</h3>
+    <p>
+      Browser sync storage limits both its total size and its number of entries, and
+      each character profile uses some of each. The limits are checked on every device,
+      including Firefox for Android and browsers not signed in to sync, with or without
+      per-character favourites. When either limit is reached, the Options page shows a
+      notice, a mark that would take this device's data past a limit is not saved, and
+      this device may stop sending and receiving changes until there is room.
+    </p>
+    <p>
+      Delete a character profile to free space. Removing favourites reduces the total
+      size, but usually not the number of entries, so it may not be enough.
+    </p>
+    <p>
+      A backup that would take your data past the sync storage limits is not imported;
+      clicking <strong>Confirm import</strong> shows an error instead.
     </p>
   </section>
 

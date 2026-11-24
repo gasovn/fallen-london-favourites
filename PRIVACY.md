@@ -7,13 +7,17 @@
 The extension stores the following data in your browser's sync storage (Chrome Sync or Firefox Account):
 
 - IDs of branches, storylets and cards you mark as favourite or avoided
-- Your extension preferences (reorder mode, click mode, block action setting)
+- Your extension preferences (reorder mode, click mode, click protection, per-character favourites, start new profiles empty)
+- IDs of your characters that have their own favourites list
+- Names of those characters, shown in the profile list on the options page; a name and its character ID can stay after the list is deleted
 
-This data syncs between your browsers if you are signed in to Chrome or Firefox.
+The character ID is read from the game's login token in the page and the name from your profile link. The token itself is not stored.
+
+This data syncs between your browsers if you are signed in to Chrome or Firefox; Firefox for Android keeps it on the device.
 
 ## Data not collected
 
-- No data is sent to any external server
+- No data is sent to any external server other than your browser's own sync service (Chrome Sync or Firefox Account)
 - No analytics or telemetry
 - No tracking of browsing activity
 - No user accounts or registration
@@ -24,7 +28,6 @@ This data syncs between your browsers if you are signed in to Chrome or Firefox.
 | Permission | Why |
 |---|---|
 | `storage` | Store your favourites and settings |
-| `unlimitedStorage` | Support users with many marked items |
 | `host_permissions: fallenlondon.com` | The extension only runs on this site |
 
 ## Source code

@@ -8,10 +8,11 @@ Mark storylets, branches and cards as favourite or avoided in Fallen London. Fav
 
 - Green/red highlights on favourite and avoided choices
 - Automatic reordering: favourites up, avoided down (configurable)
-- Click protection on avoided choices: off, hold Shift to bypass, or confirmation click (long press on mobile)
+- Click protection on avoided choices: off, hold Shift to bypass (long press on mobile), or confirmation click
 - Two click modes: cycle through states, or click/Ctrl+Click (tap/long press on mobile)
-- Import/export your favourites and settings as a JSON file
-- Settings sync across devices via Chrome Sync / Firefox Account
+- Optional per-character favourites: each Fallen London character keeps its own list
+- Import/export your favourites, character profiles and the reordering, click mode and click protection settings as a JSON file
+- Favourites and settings sync across devices via Chrome Sync / Firefox Account (not on Firefox for Android)
 - Migration from other FL Favourites forks — import raw storage dumps through the same Import button
 - Firefox for Android supported
 
@@ -25,7 +26,7 @@ Mark storylets, branches and cards as favourite or avoided in Fallen London. Fav
 <img src="store-assets/screenshots/05-mobile-storylets.jpg" alt="Storylets on Firefox for Android with click protection" width="220">
 </p>
 
-<img src="store-assets/screenshots/04-options.png" alt="Options page with Fallen London theme" width="540">
+<img src="docs/img/options.png" alt="Options page with reordering, click mode, click protection and per-character favourites settings" width="540">
 
 ## Install
 
@@ -45,8 +46,8 @@ pnpm build:firefox    # Firefox production build
 pnpm zip              # package for Chrome Web Store
 pnpm zip:firefox      # package for Firefox AMO
 pnpm test             # run tests
-pnpm lint             # ESLint
-pnpm format           # Prettier
+pnpm lint             # ESLint, tsc, Prettier check
+pnpm fix              # ESLint --fix, Prettier --write
 ```
 
 ## Feedback

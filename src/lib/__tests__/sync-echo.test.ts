@@ -6,6 +6,7 @@ import {
   type EventfulBrowserStub,
 } from '../../../tests/helpers/mock-storage';
 import { sets } from '../../../tests/helpers/clients';
+import { WHATS_NEW_FLAG } from '../flags';
 
 // The extension's own sync writes echo back as onChanged(area='sync'); a pull
 // on that echo must not overwrite freshly written local state.
@@ -857,7 +858,7 @@ describe('pulls followed by more changes', () => {
   );
 });
 
-describe('importData keeps the multi-profile settings a backup does not hold', () => {
+describe('importData keeps the device settings a backup does not hold', () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -908,10 +909,17 @@ describe('importData keeps the multi-profile settings a backup does not hold', (
     expect(data.start_empty).toBe(true);
   });
 
-  it('writes neither when the device had none', async () => {
+  it('keeps the unseen-changelog flag across a restore', async () => {
+    const data = await importInto({ [WHATS_NEW_FLAG]: true });
+
+    expect(data[WHATS_NEW_FLAG]).toBe(true);
+  });
+
+  it('writes none of them when the device had none', async () => {
     const data = await importInto({});
 
     expect(data).not.toHaveProperty('multi_toggle');
     expect(data).not.toHaveProperty('start_empty');
+    expect(data).not.toHaveProperty(WHATS_NEW_FLAG);
   });
 });

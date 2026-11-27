@@ -1,4 +1,4 @@
-import { defineConfig } from 'wxt';
+import { defineConfig, type UserManifest } from 'wxt';
 import pkg from './package.json';
 
 export default defineConfig({
@@ -6,7 +6,7 @@ export default defineConfig({
   zip: {
     excludeSources: ['private/**'],
   },
-  manifest: {
+  manifest: ({ browser }): UserManifest => ({
     name: 'Fallen London Favourites',
     short_name: 'Fallen London Favourites',
     description:
@@ -17,6 +17,15 @@ export default defineConfig({
       '32': 'img/icon32.png',
       '48': 'img/icon48.png',
       '128': 'img/icon128.png',
+    },
+    action: {
+      default_title: 'Fallen London Favourites',
+      default_icon: {
+        '16': 'img/icon16.png',
+        '32': 'img/icon32.png',
+      },
+      // Firefox-only: start on the toolbar instead of the extensions panel.
+      ...(browser === 'firefox' ? { default_area: 'navbar' } : {}),
     },
     browser_specific_settings: {
       gecko: {
@@ -38,5 +47,5 @@ export default defineConfig({
         matches: ['*://*.fallenlondon.com/*'],
       },
     ],
-  },
+  }),
 });

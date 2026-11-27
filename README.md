@@ -11,6 +11,7 @@ Mark storylets, branches and cards as favourite or avoided in Fallen London. Fav
 - Click protection on avoided choices: off, hold Shift to bypass (long press on mobile), or confirmation click
 - Two click modes: cycle through states, or click/Ctrl+Click (tap/long press on mobile)
 - Optional per-character favourites: each Fallen London character keeps its own list
+- Toolbar button that opens the Options page; it shows a red ! when sync storage is full or per-character favourites can't read your character, and a dot after an update with new features
 - Import/export your favourites, character profiles and the reordering, click mode and click protection settings as a JSON file
 - Favourites and settings sync across devices via Chrome Sync / Firefox Account (not on Firefox for Android)
 - Migration from other FL Favourites forks — import raw storage dumps through the same Import button

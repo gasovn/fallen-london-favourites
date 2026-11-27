@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMockStorage } from '../../../tests/helpers/mock-storage';
-import { syncPayload, setDeviceFlag, SYNC_FULL_FLAG, JWT_DEGRADED_FLAG } from '../flags';
+import {
+  syncPayload,
+  setDeviceFlag,
+  SYNC_FULL_FLAG,
+  JWT_DEGRADED_FLAG,
+  WHATS_NEW_FLAG,
+} from '../flags';
 
 describe('syncPayload', () => {
   it('strips device-local dev: keys and keeps everything else', () => {
@@ -9,11 +15,13 @@ describe('syncPayload', () => {
       branch_faves_keys: ['branch_faves_0'],
       [SYNC_FULL_FLAG]: true,
       [JWT_DEGRADED_FLAG]: true,
+      [WHATS_NEW_FLAG]: true,
     });
 
     expect(result).toEqual({ storage_schema: 5, branch_faves_keys: ['branch_faves_0'] });
     expect(result).not.toHaveProperty(SYNC_FULL_FLAG);
     expect(result).not.toHaveProperty(JWT_DEGRADED_FLAG);
+    expect(result).not.toHaveProperty(WHATS_NEW_FLAG);
   });
 });
 

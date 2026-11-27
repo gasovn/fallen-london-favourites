@@ -8,7 +8,8 @@ import {
   deleteProfile,
   listProfilesWithNames,
 } from '@/lib/multi-profile';
-import { setDeviceFlag, SYNC_FULL_FLAG, JWT_DEGRADED_FLAG } from '@/lib/flags';
+import { setDeviceFlag, SYNC_FULL_FLAG, JWT_DEGRADED_FLAG, WHATS_NEW_FLAG } from '@/lib/flags';
+import { SHOW_WHATS_NEW } from '@/lib/badge';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const radios = document.querySelectorAll<HTMLInputElement>('input[type=radio]');
@@ -223,6 +224,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await setupNotices();
   await setupMultiProfile();
+  await showWhatsNew();
+
+  // The toolbar button asks an open page first and brings forward the tab that answers.
+  browser.runtime.onMessage.addListener(
+    (message: unknown, _sender, sendResponse: (response: { tabId?: number }) => void) => {
+      if (
+        typeof message !== 'object' ||
+        message === null ||
+        !('type' in message) ||
+        message.type !== SHOW_WHATS_NEW
+      ) {
+        return false;
+      }
+
+      showWhatsNew();
+      browser.tabs.getCurrent().then(
+        (tab) => sendResponse({ tabId: tab?.id }),
+        () => sendResponse({}),
+      );
+
+      // Keeps the channel open for the asynchronous answer, in Chrome as well as Firefox.
+      return true;
+    },
+  );
 });
 
 function makeNotice(text: string, onDismiss: () => void): HTMLElement {
@@ -292,6 +317,32 @@ async function setupNotices(): Promise<void> {
       render();
     }
   });
+}
+
+async function showWhatsNew(): Promise<void> {
+  const flags = await browser.storage.local.get([WHATS_NEW_FLAG]);
+  const changelog = document.querySelector<HTMLDetailsElement>('.changelog-details');
+
+  if (flags[WHATS_NEW_FLAG] !== true || !changelog) {
+    return;
+  }
+
+  changelog.open = true;
+
+  // A notice outranks the news: the flag stays until the changelog is shown without one.
+  if ((document.getElementById('notices')?.childElementCount ?? 0) > 0) {
+    return;
+  }
+
+  // A tab restored in the background has not been seen yet.
+  if (document.visibilityState !== 'visible') {
+    document.addEventListener('visibilitychange', () => showWhatsNew(), { once: true });
+
+    return;
+  }
+
+  changelog.scrollIntoView();
+  await setDeviceFlag(WHATS_NEW_FLAG, false);
 }
 
 async function setupMultiProfile(): Promise<void> {

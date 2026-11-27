@@ -6,6 +6,9 @@ export const SYNC_FULL_FLAG = 'dev:sync_full';
 /** Raised when per-character mode is on and the only token found could not be read. */
 export const JWT_DEGRADED_FLAG = 'dev:jwt_degraded';
 
+/** Raised by an update that adds features; cleared once the changelog has been shown. */
+export const WHATS_NEW_FLAG = 'dev:whats_new';
+
 export function syncPayload(data: Record<string, unknown>): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
 

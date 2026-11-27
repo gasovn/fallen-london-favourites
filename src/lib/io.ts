@@ -14,7 +14,7 @@ import {
 } from '@/types';
 import { packSet, unpackSet, parseClickProtection } from './storage';
 import { keyFor, listProfileCharIds, keysForProfile, REGISTRY_KEY } from './profiles';
-import { syncPayload } from './flags';
+import { syncPayload, WHATS_NEW_FLAG } from './flags';
 import { projectArea, wouldExceed } from './quota';
 import { migrateData, detectVersion } from './migration';
 
@@ -142,9 +142,10 @@ export async function importData(
 
   const snapshot = await browser.storage.local.get(null);
 
-  // The backup omits these two; dropping the toggle would point open tabs at
-  // the shared default until the next pull from sync brings it back.
-  for (const key of ['multi_toggle', 'start_empty']) {
+  // The backup omits these; dropping the toggle would point open tabs at the
+  // shared default until the next pull from sync brings it back, and dropping
+  // the changelog flag would lose news that was never shown.
+  for (const key of ['multi_toggle', 'start_empty', WHATS_NEW_FLAG]) {
     if (typeof snapshot[key] === 'boolean') {
       storageData[key] = snapshot[key];
     }

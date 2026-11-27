@@ -1,8 +1,11 @@
 import { migrate } from '@/lib/migration';
 import { cleanupStorage } from '@/lib/cleanup';
 import { setupSyncListener, syncToLocal } from '@/lib/sync';
+import { actionApi, applyBadge, BADGE_KEYS, noteUpdate, openOptions } from '@/lib/badge';
 
 export default defineBackground(() => {
+  setupSyncListener();
+
   browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
       // Fresh install — restore data from sync (e.g. from another device)
@@ -33,7 +36,30 @@ export default defineBackground(() => {
     } catch {
       // Sync cleanup failed — non-critical
     }
+
+    if (details.reason === 'update') {
+      try {
+        await noteUpdate(details.previousVersion, browser.runtime.getManifest().version);
+      } catch (e) {
+        console.error('Marking the new version failed:', e);
+      }
+    }
   });
 
-  setupSyncListener();
+  actionApi().onClicked.addListener(() => {
+    openOptions().catch((e) => console.error('Could not open the options page:', e));
+  });
+
+  // Chrome does not start the service worker at browser launch without this listener.
+  browser.runtime.onStartup.addListener(() => {
+    applyBadge();
+  });
+
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && BADGE_KEYS.some((key) => key in changes)) {
+      applyBadge();
+    }
+  });
+
+  applyBadge();
 });

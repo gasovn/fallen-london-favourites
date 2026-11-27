@@ -1,3 +1,9 @@
+Version 0.9.0
+
+* Toolbar button that opens the Options page
+* The button shows "!" when sync storage is full or your character could not be read, and a dot after an update with new features until the changelog has been seen
+* In Firefox the button starts on the toolbar; on Firefox for Android it is in the Extensions menu
+
 Version 0.8.0
 
 * Per-character favourites, off by default: each character gets its own favourites and avoids

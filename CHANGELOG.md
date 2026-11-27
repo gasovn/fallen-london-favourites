@@ -4,7 +4,7 @@
 
 - Toolbar button that opens the Options page
 - The button shows "!" when sync storage is full or your character could not be read, and a dot after an update with new features until the changelog has been seen
-- In Firefox the button starts on the toolbar; on Firefox for Android it is in the Extensions menu
+- In Chrome the button is in the extensions menu, pin it to see the marks on the toolbar; in Firefox it starts on the toolbar; on Firefox for Android it is in the Extensions menu
 
 ## 0.8.0 — 2026-11-24
 

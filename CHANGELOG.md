@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.1 — 2026-11-28
+
+- The Options page explains that "Start new profiles empty" also applies to the character you are playing now
+- The Options page says up front that turning per-character favourites off keeps one character's favourites as the shared list and deletes the other profiles
+
 ## 0.9.0 — 2026-11-27
 
 - Toolbar button that opens the Options page
